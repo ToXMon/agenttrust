@@ -42,12 +42,13 @@
 | Write ServiceAgreement.sol | `web3_engineer` | `solidity`, `code-review-skill` | `/audit` after |
 | Write lifecycle tests | `qa_engineer` | `solidity` | — |
 
-### Workpack 4: Deploy Script
+### Workpack 4: Deploy Script + Akash SDLs + Cloudflare D1
 | Task | Profile | Skills | ASE Commands |
 |------|---------|--------|-------------|
 | Write Deploy.s.sol | `web3_engineer` | `solidity` | — |
+| Create Akash SDLs (3 files) | `devops_engineer` | `akash` | — |
+| Create Cloudflare D1 schema | `devops_engineer` | — | — |
 | Deploy to Base Sepolia | — (main agent) | — | 🚨 GATE |
-
 ### Workpack 5: Gensyn AXL
 | Task | Profile | Skills | ASE Commands |
 |------|---------|--------|-------------|
@@ -75,21 +76,22 @@
 | Implement 0G + wallet modules | `backend_engineer` | `code-review-skill` | `/audit` after |
 | AI inference integration | `ai-engineer` | `code-review-skill` | — |
 
-### Workpack 9: Frontend Dashboard
+### Workpack 9: Frontend Dashboard (Cloudflare Pages)
 | Task | Profile | Skills | ASE Commands |
 |------|---------|--------|-------------|
 | Set up Next.js + Stripe design | `frontend_engineer` | `code-review-skill` | — |
+| Configure Cloudflare adapter (D1, DO, R2, Workers) | `devops_engineer` | Cloudflare Pages/Workers/D1/Durable Objects knowledge | — |
 | Build all pages + components | `frontend_engineer` | `code-review-skill` | `/audit` after |
-| Deploy to Vercel | `frontend_engineer` | — | — |
-
-### Workpack 10: Demo + Submit
+| Deploy to Cloudflare Pages | `devops_engineer` | Cloudflare Pages knowledge | — |
+### Workpack 10: Demo + Submit (Cloudflare + Akash)
 | Task | Profile | Skills | ASE Commands |
 |------|---------|--------|-------------|
+| Deploy to Akash (3 containers) | `devops_engineer` | `akash` | — |
+| Deploy to Cloudflare (Pages + Workers + D1 + DO + R2 + Queues) | `devops_engineer` | Cloudflare knowledge | — |
 | Wire demo scenario | `fullstack_engineer` | `code-review-skill` | — |
 | Run end-to-end demo | — (main agent) | — | — |
 | Finalize docs | `developer` | — | — |
 | Submit | — (main agent) | — | 🚨 GATE |
-
 ---
 
 ## Subordinate Call Template
