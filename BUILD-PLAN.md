@@ -145,9 +145,9 @@ All other decisions: **autonomous. No approval needed.**
 
 ---
 
-## Workpack 4: Deploy Script + Base Deployment
+## Workpack 4: Deploy Script + Base Deployment + Akash SDLs + Cloudflare D1
 
-**Session budget:** ~20% context
+**Session budget:** ~25% context
 **Priority:** HIGH
 **Sponsor tracks:** All (contracts needed for demo)
 **🚨 HUMAN GATE: contract_deploy**
@@ -161,19 +161,33 @@ All other decisions: **autonomous. No approval needed.**
 3. Verify contracts on BaseScan
 4. Save deployment addresses to `contracts/deployments.json`
 5. **Request human gate approval before deploying**
+6. Create 3 Akash SDL files:
+   - `deploy/akash/orchestrator.yaml` — Agent orchestrator (2 CPU, 4Gi RAM, 10Gi storage)
+   - `deploy/akash/axl-node-alpha.yaml` — AXL Node 1 / researcher agent (1 CPU, 2Gi RAM, 5Gi storage)
+   - `deploy/akash/axl-node-beta.yaml` — AXL Node 2 / provider agent (1 CPU, 2Gi RAM, 5Gi storage)
+7. Validate SDLs: `provider-services tx deployment create --dry-run` for each
+8. Create Cloudflare D1 database schema:
+   - `interactions` table (agent interactions log)
+   - `agents` table (registered agent metadata cache)
+   - `trust_scores` table (trust score history)
+   - Schema file: `deploy/cloudflare/d1-schema.sql`
+
+> **Note:** Use FUNDED Akash deployment (not trial — 24h limit on trial deployments).
+> **Note:** Custom domain via Cloudflare CNAME pointing to Akash endpoints.
 
 ### Verification
 - [ ] Deploy script runs successfully in simulation (`forge script --dry-run`)
 - [ ] Contracts deployed to Base Sepolia
 - [ ] Addresses saved to deployments.json
 - [ ] No plaintext private keys
+- [ ] 3 Akash SDLs validate with `provider-services tx deployment create --dry-run`
+- [ ] Cloudflare D1 schema created
 
 ### Commit
-`feat: deploy script with Base Sepolia deployment`
-
+`feat: deploy script, Akash SDLs, Cloudflare D1 schema for Base Sepolia deployment`
 ---
 
-## Workpack 5: Gensyn AXL Setup
+## Workpack 5: Gensyn AXL Setup (Akash Containers)
 
 **Session budget:** ~25% context
 **Priority:** CRITICAL
@@ -186,17 +200,24 @@ All other decisions: **autonomous. No approval needed.**
 4. Implement `axl/protocol.ts` — AgentTrust message schema
 5. Implement `axl/message-handler.ts` — trust verification over AXL
 6. Implement `axl/trust-verify.ts` — capability verification protocol
-7. Test: send message from Node 1 to Node 2 and verify receipt
+7. Deploy AXL containers to Akash:
+   - Deploy `axl-node-alpha` container from `deploy/akash/axl-node-alpha.yaml`
+   - Deploy `axl-node-beta` container from `deploy/akash/axl-node-beta.yaml`
+   - Nodes run on Akash containers, NOT localhost — separate IPs for Gensyn qualification
+8. Configure Cloudflare CNAME for AXL endpoints:
+   - `axl-alpha.agenttrust.xyz` → Akash Node 1
+   - `axl-beta.agenttrust.xyz` → Akash Node 2
+9. Test: send message from Node 1 to Node 2 and verify receipt
 
 ### Verification
-- [ ] 2 AXL nodes running on different ports
+- [ ] 2 AXL nodes running on Akash containers (different IPs)
 - [ ] Messages sent from Node 1 received at Node 2
 - [ ] Trust verification message schema works
-- [ ] NOT in-process — real P2P across nodes
+- [ ] NOT in-process — real P2P across separate Akash containers
+- [ ] Cloudflare CNAME resolves to AXL endpoints
 
 ### Commit
-`feat: Gensyn AXL P2P communication with trust verification protocol`
-
+`feat: Gensyn AXL P2P on Akash containers with Cloudflare CNAME endpoints`
 ---
 
 ## Workpack 6: Agent Implementations + ENS
@@ -235,7 +256,7 @@ All other decisions: **autonomous. No approval needed.**
 
 ---
 
-## Workpack 7: Uniswap + KeeperHub Integration
+## Workpack 7: Uniswap + KeeperHub + Cloudflare Queues
 
 **Session budget:** ~25% context
 **Priority:** HIGH
@@ -260,16 +281,21 @@ All other decisions: **autonomous. No approval needed.**
    - Verification protocol
    - Trust threshold checking
 4. Wire up: agent payment flow uses Uniswap → KeeperHub execution
+5. Set up Cloudflare Queues for demo trigger jobs:
+   - Create queue: `demo-trigger-queue`
+   - Queue consumer sends HTTP requests to Akash orchestrator
+   - Config file: `deploy/cloudflare/wrangler.toml` (queues section)
+6. Wire Queue consumer to Akash orchestrator endpoint
 
 ### Verification
 - [ ] Uniswap quote API returns valid quotes
 - [ ] KeeperHub MCP connection established
 - [ ] Transaction retry logic works
 - [ ] FEEDBACK.md has real integration notes
+- [ ] Cloudflare Queue created and consumer wired
 
 ### Commit
-`feat: Uniswap API + KeeperHub MCP integration with trust-gated payments`
-
+`feat: Uniswap API + KeeperHub MCP + Cloudflare Queues for demo orchestration`
 ---
 
 ## Workpack 8: 0G Storage + Compute + Wallet
@@ -303,7 +329,7 @@ All other decisions: **autonomous. No approval needed.**
 
 ---
 
-## Workpack 9: Frontend Dashboard
+## Workpack 9: Frontend Dashboard (Cloudflare Pages)
 
 **Session budget:** ~25% context
 **Priority:** MEDIUM
@@ -312,31 +338,51 @@ All other decisions: **autonomous. No approval needed.**
 ### Tasks
 1. Set up Next.js 14 in `/frontend/` with TailwindCSS
 2. Install Stripe DESIGN.md: `npx getdesign@latest add stripe`
-3. Build pages:
+3. Configure `@opennextjs/cloudflare` adapter for Cloudflare Pages deployment
+4. Set up Cloudflare D1 database:
+   - Create D1 database via `wrangler d1 create agenttrust-db`
+   - Apply schema from `deploy/cloudflare/d1-schema.sql`
+   - Bind D1 in `wrangler.toml`
+5. Set up Cloudflare Workers API routes:
+   - `/api/agents` — agent listing from D1 cache
+   - `/api/interactions` — interaction history from D1
+   - `/api/trust-scores` — trust score data
+   - `/api/demo-trigger` — enqueue demo job to Cloudflare Queue
+6. Set up Cloudflare Durable Objects for WebSocket real-time feed:
+   - Replaces SSE polling with true WebSocket push
+   - `AgentTrustRoom` DO class manages connections
+   - Real-time message log + trust score updates
+   - WebSocket Hibernation for cost efficiency
+7. Set up Cloudflare R2 for audit log storage:
+   - Create R2 bucket: `agenttrust-audit-logs`
+   - Zero egress cost for audit trail retrieval
+   - Bind R2 in `wrangler.toml`
+8. Build pages:
    - `/` — Marketplace home (agent cards, trust scores)
    - `/agents` — Agent profiles with ENS identity
    - `/trust` — Trust score explorer (iNFT visualization)
-   - `/messages` — AXL message log (P2P communication)
-   - `/audit` — Transaction audit trail (KeeperHub)
-4. Build components:
+   - `/messages` — AXL message log (real-time via Durable Objects WebSocket)
+   - `/audit` — Transaction audit trail (KeeperHub + R2 logs)
+9. Build components:
    - `AgentCard.tsx` — Agent with trust score badge
    - `TrustScore.tsx` — Visual trust score gauge
-   - `MessageLog.tsx` — AXL message feed
+   - `MessageLog.tsx` — Real-time AXL message feed (WebSocket)
    - `TransactionFeed.tsx` — On-chain transaction history
-5. Deploy to Vercel
+10. Deploy to Cloudflare Pages (NOT Vercel)
 
 ### Verification
 - [ ] All 5 pages render correctly
 - [ ] Trust scores display from on-chain data
-- [ ] Messages show AXL communication
-- [ ] Live URL accessible
+- [ ] Messages show AXL communication (real-time WebSocket)
+- [ ] Live URL accessible on Cloudflare Pages
+- [ ] D1 database queries working
+- [ ] R2 audit log storage working
+- [ ] Durable Objects WebSocket feed operational
 
 ### Commit
-`feat: Next.js frontend dashboard with Stripe-inspired design`
+`feat: Next.js frontend on Cloudflare Pages with D1, Durable Objects, R2`
 
----
-
-## Workpack 10: Demo + Submit
+## Workpack 10: Demo + Submit (Cloudflare + Akash Deployment)
 
 **Session budget:** ~20% context
 **Priority:** CRITICAL
@@ -348,29 +394,59 @@ All other decisions: **autonomous. No approval needed.**
    - Full 7-step automated demo flow
    - Register both agents → discover → verify → negotiate → agree → pay → trust update
    - Run against deployed contracts on Base
-2. Run end-to-end demo and capture:
+2. Deploy to Akash (3 containers):
+   - `deploy/akash/orchestrator.yaml` — Agent orchestrator + cron
+   - `deploy/akash/axl-node-alpha.yaml` — AXL Node 1
+   - `deploy/akash/axl-node-beta.yaml` — AXL Node 2
+   - Use FUNDED deployment (not trial — 24h limit)
+3. Deploy to Cloudflare:
+   - Cloudflare Pages: frontend dashboard
+   - Cloudflare Workers: API routes + Queue consumer
+   - Cloudflare D1: database with schema applied
+   - Cloudflare Durable Objects: WebSocket real-time feed
+   - Cloudflare R2: audit log bucket
+   - Cloudflare Queues: demo trigger queue
+4. Verify all Cloudflare services operational:
+   - `wrangler pages deploy` succeeds
+   - D1 database accessible
+   - R2 bucket writable
+   - Durable Objects WebSocket connects
+   - Queue consumer processes messages
+5. Warm-start: run 5 sequential demos on deploy to populate dashboard
+6. Auto-demo scheduler on Akash orchestrator (every 4 minutes):
+   - Cron job triggers demo scenario
+   - Ensures dashboard always has fresh data for judges
+7. Configure custom domain (agenttrust.xyz or similar):
+   - Cloudflare DNS CNAME to Pages
+   - SSL via Cloudflare
+   - Verify domain resolves
+8. Run end-to-end demo and capture:
    - Terminal output showing each step
    - Screenshots of frontend dashboard
    - Transaction hashes on Base
-3. Record demo video (4 minutes max):
+9. Record demo video (4 minutes max):
    - Who we are + why this project
    - How it works (architecture walkthrough)
    - Live demo of the 7-step flow
    - Sponsor alignment summary
-4. Finalize all feedback docs:
-   - `FEEDBACK.md` (Uniswap — MANDATORY)
-   - `KEEPERHUB_FEEDBACK.md`
-   - `AI_USAGE.md`
-5. Update README.md with:
-   - Architecture diagram
-   - Setup instructions
-   - Demo results
-   - Sponsor qualification evidence
-6. **Request human gate approval for submission**
-7. Submit at https://ethglobal.com/events/openagents/submit
+10. Finalize all feedback docs:
+    - `FEEDBACK.md` (Uniswap — MANDATORY)
+    - `KEEPERHUB_FEEDBACK.md`
+    - `AI_USAGE.md`
+11. Update README.md with:
+    - Architecture diagram
+    - Setup instructions
+    - Demo results
+    - Sponsor qualification evidence
+12. **Request human gate approval for submission**
+13. Submit at https://ethglobal.com/events/openagents/submit
 
 ### Verification
 - [ ] Demo runs end-to-end without errors
+- [ ] 3 Akash containers deployed and running
+- [ ] All Cloudflare services operational
+- [ ] Auto-demo scheduler running every 4 minutes
+- [ ] Custom domain resolves with SSL
 - [ ] Video under 4 minutes
 - [ ] FEEDBACK.md complete and detailed
 - [ ] README shows all sponsor qualifications
@@ -379,8 +455,7 @@ All other decisions: **autonomous. No approval needed.**
 - [ ] Submitted before 12pm NOON ET May 3
 
 ### Final Commit
-`chore: final submission — demo video, feedback docs, README polish`
-
+`chore: final submission — Akash + Cloudflare deployment, demo video, feedback docs`
 ---
 
 ## Session Checklist (copy at start of each session)
