@@ -1,0 +1,30 @@
+{
+  "project": "agenttrust",
+  "hackathon": "ETHGlobal Open Agents 2026",
+  "deadline": "2026-05-03T12:00:00-04:00",
+  "repo": "https://github.com/ToXMon/agenttrust",
+  "current_workpack": 1,
+  "total_workpacks": 10,
+  "sessions_completed": 0,
+  "workpacks": {
+    "1": { "name": "Foundry Setup + AgentRegistry", "status": "pending", "priority": "CRITICAL", "sponsor_tracks": ["0G Framework", "ENS"], "started": null, "completed": null, "commits": [], "notes": "" },
+    "2": { "name": "TrustNFT (ERC-7857 iNFT)", "status": "pending", "priority": "CRITICAL", "sponsor_tracks": ["0G Framework", "0G On-Chain AI"], "started": null, "completed": null, "commits": [], "notes": "" },
+    "3": { "name": "ServiceAgreement (Escrow)", "status": "pending", "priority": "CRITICAL", "sponsor_tracks": ["Uniswap", "KeeperHub"], "started": null, "completed": null, "commits": [], "notes": "" },
+    "4": { "name": "Deploy Script + Base Deployment", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["All"], "started": null, "completed": null, "commits": [], "notes": "HUMAN GATE: contract_deploy", "gate_required": true },
+    "5": { "name": "Gensyn AXL Setup", "status": "pending", "priority": "CRITICAL", "sponsor_tracks": ["Gensyn"], "started": null, "completed": null, "commits": [], "notes": "" },
+    "6": { "name": "Agent Implementations + ENS", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["ENS", "0G"], "started": null, "completed": null, "commits": [], "notes": "" },
+    "7": { "name": "Uniswap + KeeperHub Integration", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["Uniswap", "KeeperHub"], "started": null, "completed": null, "commits": [], "notes": "Fill FEEDBACK.md as you go" },
+    "8": { "name": "0G Storage + Compute + Wallet", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["0G"], "started": null, "completed": null, "commits": [], "notes": "" },
+    "9": { "name": "Frontend Dashboard", "status": "pending", "priority": "MEDIUM", "sponsor_tracks": ["All"], "started": null, "completed": null, "commits": [], "notes": "Use Stripe DESIGN.md" },
+    "10": { "name": "Demo + Submit", "status": "pending", "priority": "CRITICAL", "sponsor_tracks": ["All"], "started": null, "completed": null, "commits": [], "notes": "HUMAN GATE: submission", "gate_required": true }
+  },
+  "blockers": [],
+  "risk_log": [],
+  "sponsor_checklist": {
+    "0G": { "deploy_on_0g": false, "storage_used": false, "compute_used": false, "inft_implemented": false, "openclaw_referenced": false },
+    "gensyn": { "axl_primary_comm": false, "separate_nodes": false, "real_utility": false },
+    "ens": { "identity_mechanism": false, "records_metadata": false, "service_discovery": false, "subnames": false, "no_hardcoded": false },
+    "uniswap": { "api_swaps": false, "autonomous_settlement": false, "feedback_md": false, "real_execution": false },
+    "keeperhub": { "mcp_or_cli": false, "retry_logic": false, "gas_optimization": false, "audit_trail": false, "x402_or_mpp": false }
+  }
+}
