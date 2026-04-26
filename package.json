@@ -1,0 +1,36 @@
+{
+  "name": "agenttrust",
+  "version": "0.1.0",
+  "description": "Verifiable Agent Commerce Protocol — trust-scored agent interactions on Base",
+  "private": true,
+  "workspaces": [
+    "agents/*",
+    "sdk",
+    "axl",
+    "frontend"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts",
+    "demo": "tsx demo/scenario.ts",
+    "test:agents": "tsx --test agents/*/tests/*.test.ts",
+    "test:sdk": "tsx --test sdk/tests/*.test.ts",
+    "test:contracts": "cd contracts && forge test -vvv",
+    "test": "npm run test:contracts && npm run test:sdk",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:requester": "tsx agents/requester-agent/agent.ts",
+    "dev:provider": "tsx agents/provider-agent/agent.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "tsx": "^4.19.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT"
+}

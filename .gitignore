@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+lib/
+
+# Foundry
+cache/
+out/
+broadcast/
+
+counters/
+*.lock
+
+# Solidity
+*.abi
+*.bin
+
+# Next.js
+.next/
+frontend/.next/
+
+# Environment
+.env
+.env.local
+.env*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# Coverage
+coverage/
+coverage.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Keys
+*.pem
+*.key
+keystore/
+
+# Temp
+tmp/
+*.tmp
