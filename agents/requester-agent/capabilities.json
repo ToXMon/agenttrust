@@ -1,0 +1,33 @@
+{
+  "name": "requester-agent",
+  "version": "0.1.0",
+  "ens": "requester.agenttrust.eth",
+  "description": "Service requester agent with trust-based provider verification",
+  "capabilities": [
+    {
+      "id": "data-research",
+      "name": "Data Research",
+      "description": "Request data analysis and research services from provider agents",
+      "input": { "type": "object", "properties": { "query": { "type": "string" }, "depth": { "enum": ["quick", "standard", "deep"] } } },
+      "output": { "type": "object", "properties": { "report": { "type": "string" }, "sources": { "type": "array", "items": { "type": "string" } } } }
+    },
+    {
+      "id": "trust-verification",
+      "name": "Trust Verification",
+      "description": "Verify provider agent trust scores before engaging services",
+      "input": { "type": "object", "properties": { "providerAddress": { "type": "string" }, "threshold": { "type": "number" } } },
+      "output": { "type": "object", "properties": { "trusted": { "type": "boolean" }, "score": { "type": "number" } } }
+    },
+    {
+      "id": "escrow-management",
+      "name": "Escrow Management",
+      "description": "Create and settle service agreement escrows on-chain",
+      "input": { "type": "object", "properties": { "amount": { "type": "string" }, "token": { "type": "string" }, "deadline": { "type": "number" } } },
+      "output": { "type": "object", "properties": { "agreementId": { "type": "string" }, "txHash": { "type": "string" } } }
+    }
+  ],
+  "trustRequirements": {
+    "minimumProviderScore": 60,
+    "preferredProviderScore": 80
+  }
+}
