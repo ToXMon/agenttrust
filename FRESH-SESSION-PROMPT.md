@@ -11,26 +11,39 @@
 ## How This Works
 
 ```
-Session 1: "Read and execute the next workpack from BUILD-PLAN.md. Load progress from progress.json first."
-  → Agent reads BUILD-PLAN.md → finds Workpack 1 → executes → updates progress.json → /reflect
-
-Session 2: "Read and execute the next workpack from BUILD-PLAN.md. Load progress from progress.json first."
-  → Agent reads BUILD-PLAN.md → finds Workpack 2 → executes → updates progress.json → /reflect
-
-... repeat until all workpacks done ...
-
-Final Session: "Execute the submission checklist from BUILD-PLAN.md. Load progress from progress.json first."
-  → Agent verifies all workpacks → runs final checks → submits
+Session N: "Read and execute the next incomplete workpack from BUILD-PLAN.md. Load progress from progress.json first."
+  → Agent reads progress.json → finds current workpack N
+  → Agent reads SKILL-PROFILE-MAP.md → gets delegation plan for workpack N
+  → Agent delegates to subordinate with profile + skill loading instructions
+  → Subordinate loads skills via skills_tool:load → executes → returns results
+  → Main agent verifies → updates progress.json → commits → /reflect
 ```
 
 ## Context Budget Rules
 
 - **Never exceed 30% context window per session**
 - Each session = ONE workpack only
+- **Read SKILL-PROFILE-MAP.md** before every subordinate call to get the right profile + skills
+- **Include skill loading instructions** in every subordinate message (see template below)
 - Use `§§include(path)` for large files instead of pasting content
 - Delegate heavy work to subordinates (they get fresh context)
 - End session with reflection + progress update
 - If context feels heavy (>20%), wrap up and hand off immediately
+
+## Subordinate Delegation Template
+
+For EVERY subordinate call, include this in the message:
+
+```
+## Skills to Load First
+Before writing any code, load these skills using skills_tool:load:
+1. skills_tool:load with skill_name "[skill from SKILL-PROFILE-MAP.md]"
+2. skills_tool:load with skill_name "code-review-skill"
+
+Then follow all instructions from the loaded skill(s).
+```
+
+This ensures every subordinate has the right standards loaded (Solidity Cyfrin rules, TypeScript rules, etc.).
 
 ## Human Gates
 
