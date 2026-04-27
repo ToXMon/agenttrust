@@ -1,0 +1,204 @@
+#!/usr/bin/env node
+
+/**
+ * Foundry → SE2 Bridge Script
+ * 
+ * Reads Foundry broadcast and ABI artifacts, generates
+ * frontend/config/deployedContracts.ts for SE2 hooks.
+ * 
+ * Usage:
+ *   node scripts/foundry-bridge.js [--chain-id 8453] [--broadcast-dir contracts/broadcast]
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+// --- Configuration ---
+const args = process.argv.slice(2);
+const getArg = (name) => {
+  const idx = args.indexOf(`--${name}`);
+  return idx !== -1 ? args[idx + 1] : null;
+};
+
+const PROJECT_ROOT = path.resolve(__dirname, '..');
+const BROADCAST_DIR = path.join(
+  PROJECT_ROOT,
+  getArg('broadcast-dir') || 'contracts/broadcast'
+);
+const OUT_DIR = path.join(PROJECT_ROOT, 'contracts/out');
+const OUTPUT_PATH = path.join(
+  PROJECT_ROOT,
+  'frontend/config/deployedContracts.ts'
+);
+const CHAIN_ID_FILTER = getArg('chain-id');
+
+// --- Helpers ---
+
+function findBroadcastFiles() {
+  const results = [];
+  
+  if (!fs.existsSync(BROADCAST_DIR)) {
+    console.error(`Broadcast directory not found: ${BROADCAST_DIR}`);
+    console.error('Run `forge script script/Deploy.s.sol --broadcast` first.');
+    process.exit(1);
+  }
+  
+  const scriptDirs = fs.readdirSync(BROADCAST_DIR);
+  
+  for (const scriptDir of scriptDirs) {
+    const scriptPath = path.join(BROADCAST_DIR, scriptDir);
+    if (!fs.statSync(scriptPath).isDirectory()) continue;
+    
+    const chainDirs = fs.readdirSync(scriptPath);
+    
+    for (const chainDir of chainDirs) {
+      if (CHAIN_ID_FILTER && chainDir !== CHAIN_ID_FILTER) continue;
+      
+      const broadcastFile = path.join(scriptPath, chainDir, 'run-latest.json');
+      if (fs.existsSync(broadcastFile)) {
+        results.push({
+          chainId: chainDir,
+          script: scriptDir,
+          file: broadcastFile,
+        });
+      }
+    }
+  }
+  
+  return results;
+}
+
+function loadABI(contractName) {
+  const candidates = [
+    path.join(OUT_DIR, `${contractName}.sol`, `${contractName}.json`),
+    path.join(OUT_DIR, `${contractName}.json`),
+  ];
+  
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      const artifact = JSON.parse(fs.readFileSync(candidate, 'utf8'));
+      if (artifact.abi) return artifact.abi.filter(entry => entry.type !== 'constructor');
+    }
+  }
+  
+  console.warn(`  ⚠ ABI not found for ${contractName}`);
+  return [];
+}
+
+function parseBroadcast(broadcastFile) {
+  const broadcast = JSON.parse(fs.readFileSync(broadcastFile, 'utf8'));
+  const contracts = {};
+  const transactions = broadcast.transactions || [];
+  
+  for (const tx of transactions) {
+    if (!tx.contractName) continue;
+    
+    const name = tx.contractName;
+    const address = tx.contractAddress || tx.to;
+    const blockNumber = tx.blockNumber;
+    
+    contracts[name] = {
+      address: address,
+      abi: loadABI(name),
+    };
+    
+    if (blockNumber) {
+      contracts[name].deployedOnBlock = blockNumber;
+    }
+  }
+  
+  return contracts;
+}
+
+// --- Main ---
+
+function main() {
+  console.log('🔨 Foundry → SE2 Bridge');
+  console.log('========================\n');
+  
+  const broadcasts = findBroadcastFiles();
+  
+  if (broadcasts.length === 0) {
+    console.error('No broadcast files found. Deploy contracts first.');
+    process.exit(1);
+  }
+  
+  const allContracts = {};
+  
+  for (const { chainId, script, file } of broadcasts) {
+    console.log(`📡 Processing chain ${chainId} (${script})`);
+    const contracts = parseBroadcast(file);
+    const count = Object.keys(contracts).length;
+    console.log(`   Found ${count} contracts`);
+    
+    allContracts[chainId] = {
+      ...allContracts[chainId],
+      ...contracts,
+    };
+  }
+  
+  const tsContent = generateTypeScript(allContracts);
+  
+  const outputDir = path.dirname(OUTPUT_PATH);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  
+  fs.writeFileSync(OUTPUT_PATH, tsContent);
+  console.log(`\n✅ Written to ${OUTPUT_PATH}`);
+  
+  for (const [chainId, contracts] of Object.entries(allContracts)) {
+    console.log(`\nChain ${chainId}:`);
+    for (const name of Object.keys(contracts)) {
+      console.log(`  - ${name}: ${contracts[name].address}`);
+    }
+  }
+}
+
+function generateTypeScript(allContracts) {
+  const contractEntries = Object.entries(allContracts)
+    .map(([chainId, contracts]) => {
+      const contractStr = Object.entries(contracts)
+        .map(([name, data]) => {
+          const abiStr = JSON.stringify(data.abi, null, 4)
+            .split('\n')
+            .map(line => '          ' + line)
+            .join('\n');
+          
+          let entry = `      ${name}: {
+        address: "${data.address}",
+        abi: ${abiStr}`;
+          
+          if (data.deployedOnBlock) {
+            entry += `,
+        deployedOnBlock: ${data.deployedOnBlock}`;
+          }
+          
+          entry += `,
+      }`;
+          return entry;
+        })
+        .join(',\n');
+      
+      return `  "${chainId}": {
+${contractStr},
+  }`;
+    })
+    .join(',\n');
+
+  return `// Autogenerated by scripts/foundry-bridge.js
+// DO NOT EDIT MANUALLY — regenerate after each deployment.
+//
+// Generated at: ${new Date().toISOString()}
+
+import type { GenericContractsDeclaration } from "@/utils/scaffold/contract";
+
+const deployedContracts = {
+${contractEntries},
+} as const satisfies GenericContractsDeclaration;
+
+export default deployedContracts;
+`;
+}
+
+main();
