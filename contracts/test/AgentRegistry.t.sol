@@ -25,7 +25,7 @@ contract AgentRegistryTest is Test {
         vm.prank(s_alice);
         uint256 tokenId = s_registry.registerAgent(ensName, capabilitiesHash);
 
-        assertEq(tokenId, 0);
+        assertEq(tokenId, 1);
 
         AgentRegistry.AgentMetadata memory meta = s_registry.getAgent(tokenId);
         assertEq(meta.ensName, ensName);
@@ -96,7 +96,7 @@ contract AgentRegistryTest is Test {
         s_registry.registerAgent("alice.eth", keccak256("caps"));
 
         uint256 found = s_registry.getAgentByENS("alice.eth");
-        assertEq(found, 0);
+        assertEq(found, 1);
     }
 
     function test_TotalRegistered(uint256 count) public {

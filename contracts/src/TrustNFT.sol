@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import {ERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Ownable2Step} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol";
 
 /**
@@ -27,7 +28,7 @@ contract TrustNFT is ERC721, Ownable2Step {
                               STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    uint256 private s_nextTokenId;
+    uint256 private s_nextTokenId = 1;
     address private s_agreementContract;
     mapping(uint256 tokenId => TrustData) private s_trustData;
     mapping(address agent => uint256 tokenId) private s_agentToTokenId;
@@ -171,7 +172,7 @@ contract TrustNFT is ERC721, Ownable2Step {
     }
 
     function totalMinted() external view returns (uint256 total) {
-        total = s_nextTokenId;
+        total = s_nextTokenId - 1;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -190,7 +191,7 @@ contract TrustNFT is ERC721, Ownable2Step {
         }
 
         uint256 successRate = (completed * 100) / total;
-        uint256 targetScore = 50 + (successRate * 50) / 100;
+        uint256 targetScore = successRate;
 
         if (targetScore > currentScore) {
             newScore = currentScore + ((targetScore - currentScore) / 10);

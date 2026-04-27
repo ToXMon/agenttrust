@@ -29,10 +29,10 @@ export interface TrustGatedSwapParams {
 }
 
 export class UniswapClient {
-  private readonly config: SwapConfig;
+  private readonly _config: SwapConfig;
 
   constructor(config: SwapConfig) {
-    this.config = config;
+    this._config = config;
   }
 
   async getQuote(

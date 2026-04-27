@@ -2,12 +2,12 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {ERC20} from "openzeppelin-contracts/contracts/mocks/token/ERC20Mock.sol";
+import {ERC20Mock} from "openzeppelin-contracts/contracts/mocks/token/ERC20Mock.sol";
 import {ServiceAgreement} from "../src/ServiceAgreement.sol";
 
 contract ServiceAgreementTest is Test {
     ServiceAgreement private s_agreement;
-    ERC20 private s_token;
+    ERC20Mock private s_token;
     address private s_requester;
     address private s_provider;
 
@@ -17,7 +17,7 @@ contract ServiceAgreementTest is Test {
 
     function setUp() public {
         s_agreement = new ServiceAgreement();
-        s_token = new ERC20();
+        s_token = new ERC20Mock();
         s_requester = makeAddr("requester");
         s_provider = makeAddr("provider");
 

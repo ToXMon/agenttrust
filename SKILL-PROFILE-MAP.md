@@ -11,6 +11,7 @@
 |---------|----------|---------------|
 | `web3_engineer` | Solidity contracts, Foundry, deployment | `solidity`, `code-review-skill` |
 | `frontend_engineer` | React, Next.js, TailwindCSS, browser testing | `code-review-skill` |
+| `frontend_engineer` (SE2) | SE2 component cherry-pick, Foundry bridge, DaisyUI | `code-review-skill` + read `docs/SE2-INTEGRATION-GUIDE.md` |
 | `backend_engineer` | TypeScript, APIs, SDKs, integrations | `code-review-skill`, `swebok-developer-knowledge` |
 | `security_auditor` | Contract audits, vulnerability scanning | `solidity`, `code-review-skill` |
 | `qa_engineer` | Test writing, coverage, edge cases | `solidity` (for contract tests), `swebok-developer-knowledge` |
@@ -22,6 +23,14 @@
 ---
 
 ## Workpack → Profile + Skills Map
+
+### Workpack 0: SE2 Frontend Foundation + ethskills
+| Task | Profile | Skills | ASE Commands |
+|------|---------|--------|-------------|
+| Cherry-pick SE2 components + hooks | `frontend_engineer` | `code-review-skill` + read `docs/SE2-INTEGRATION-GUIDE.md` | — |
+| Write Foundry bridge script | `developer` | `code-review-skill` | — |
+| Fetch ethskills + create externalContracts.ts | `backend_engineer` | `code-review-skill` + read `docs/ETHSKILLS-REFERENCE.md` | — |
+| Verify: npm run dev, Debug Contracts, wallet | `frontend_engineer` | — | Browser verify |
 
 ### Workpack 1: Foundry + AgentRegistry
 | Task | Profile | Skills | ASE Commands |
@@ -42,13 +51,12 @@
 | Write ServiceAgreement.sol | `web3_engineer` | `solidity`, `code-review-skill` | `/audit` after |
 | Write lifecycle tests | `qa_engineer` | `solidity` | — |
 
-### Workpack 4: Deploy Script + Akash SDLs + Cloudflare D1
+### Workpack 4: Deploy Script
 | Task | Profile | Skills | ASE Commands |
 |------|---------|--------|-------------|
 | Write Deploy.s.sol | `web3_engineer` | `solidity` | — |
-| Create Akash SDLs (3 files) | `devops_engineer` | `akash` | — |
-| Create Cloudflare D1 schema | `devops_engineer` | — | — |
 | Deploy to Base Sepolia | — (main agent) | — | 🚨 GATE |
+
 ### Workpack 5: Gensyn AXL
 | Task | Profile | Skills | ASE Commands |
 |------|---------|--------|-------------|
@@ -76,22 +84,28 @@
 | Implement 0G + wallet modules | `backend_engineer` | `code-review-skill` | `/audit` after |
 | AI inference integration | `ai-engineer` | `code-review-skill` | — |
 
-### Workpack 9: Frontend Dashboard (Cloudflare Pages)
+### Workpack 9: Frontend Dashboard (SE2-Enhanced)
 | Task | Profile | Skills | ASE Commands |
 |------|---------|--------|-------------|
-| Set up Next.js + Stripe design | `frontend_engineer` | `code-review-skill` | — |
-| Configure Cloudflare adapter (D1, DO, R2, Workers) | `devops_engineer` | Cloudflare Pages/Workers/D1/Durable Objects knowledge | — |
-| Build all pages + components | `frontend_engineer` | `code-review-skill` | `/audit` after |
-| Deploy to Cloudflare Pages | `devops_engineer` | Cloudflare Pages knowledge | — |
-### Workpack 10: Demo + Submit (Cloudflare + Akash)
+| Build custom dashboard pages (agents, trust, messages, audit) | `frontend_engineer` | `code-review-skill` + read `docs/SE2-INTEGRATION-GUIDE.md` | Browser verify |
+| Wire SE2 hooks to custom components | `frontend_engineer` | `code-review-skill` | — |
+| DaisyUI 5 theming + responsive design | `frontend_engineer` | `code-review-skill` | — |
+
+### Workpack 10: Demo + Submit
 | Task | Profile | Skills | ASE Commands |
 |------|---------|--------|-------------|
-| Deploy to Akash (3 containers) | `devops_engineer` | `akash` | — |
-| Deploy to Cloudflare (Pages + Workers + D1 + DO + R2 + Queues) | `devops_engineer` | Cloudflare knowledge | — |
 | Wire demo scenario | `fullstack_engineer` | `code-review-skill` | — |
 | Run end-to-end demo | — (main agent) | — | — |
 | Finalize docs | `developer` | — | — |
 | Submit | — (main agent) | — | 🚨 GATE |
+
+### Workpack 11: Triple-Layer Deployment
+| Task | Profile | Skills | ASE Commands |
+|------|---------|--------|-------------|
+| Vercel deployment | `frontend_engineer` | — | — |
+| Akash Docker + SDL | `devops_engineer` | read `docs/DEPLOYMENT-STRATEGY.md` | — |
+| IPFS + ENS setup | `web3_engineer` | — | — |
+
 ---
 
 ## Subordinate Call Template
@@ -125,6 +139,17 @@ Before starting, load these skills:
 - Report: files changed, test results, any issues
 ```
 
+## Integration Guide References
+
+When delegating tasks for SE2 or ethskills integration, include these references in subordinate prompts:
+
+| Integration | Doc to Include | How |
+|-------------|---------------|------|
+| SE2 cherry-pick | `docs/SE2-INTEGRATION-GUIDE.md` | `§§include(/a0/usr/projects/agentrust/docs/SE2-INTEGRATION-GUIDE.md)` or "Read docs/SE2-INTEGRATION-GUIDE.md before starting" |
+| ethskills usage | `docs/ETHSKILLS-REFERENCE.md` | "Read docs/ETHSKILLS-REFERENCE.md for verified addresses and patterns" |
+| Deployment | `docs/DEPLOYMENT-STRATEGY.md` | "Read docs/DEPLOYMENT-STRATEGY.md for SDL and Dockerfile" |
+| Foundry bridge | SE2 guide section 7 | "Follow the foundry-bridge.js script in docs/SE2-INTEGRATION-GUIDE.md section 7" |
+
 ## ASE Harness Commands in Workflow
 
 | Command | When | Purpose |
@@ -139,6 +164,7 @@ Before starting, load these skills:
 ```
 1. Read progress.json
 2. Read workpack from BUILD-PLAN.md
+2.5. If workpack references integration guides (SE2, ethskills, deployment), read those docs too
 3. Read SKILL-PROFILE-MAP.md for delegation plan
 4. Delegate to subordinate with skill loading instructions
 5. Verify results (forge test, tsc, etc.)

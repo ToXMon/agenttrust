@@ -32,10 +32,10 @@ const LEVEL_THRESHOLDS: readonly [number, TrustLevel][] = [
 ];
 
 export class TrustClient {
-  private readonly config: TrustConfig;
+  private readonly _config: TrustConfig;
 
   constructor(config: TrustConfig) {
-    this.config = config;
+    this._config = config;
   }
 
   async getScore(agentAddress: string): Promise<TrustScore> {

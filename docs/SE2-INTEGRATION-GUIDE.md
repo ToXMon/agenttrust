@@ -1,0 +1,789 @@
+# Scaffold-ETH 2 Integration Guide for AgentTrust
+
+> **Purpose**: Cherry-pick SE2 frontend components into AgentTrust's Foundry-based workflow.
+> **Audience**: Autonomous agents and developers integrating SE2 without adopting Hardhat.
+> **Estimated Time**: 7–9 hours for full integration.
+
+---
+
+## 1. Overview
+
+### Why Cherry-Pick (Not Fork)
+
+Scaffold-ETH 2 (SE2) is a monorepo built around **Hardhat**. AgentTrust uses **Foundry**. Forking SE2 would pull in:
+- An entire Hardhat toolchain we don't need
+- Package dependency conflicts with our Foundry artifacts
+- Monorepo overhead (yarn workspaces, turbo, hardhat package)
+
+Cherry-picking extracts only the ~35 frontend files we actually need — hooks, utils, wallet UI, and the Debug Contracts page — saving **37+ hours** vs. rebuilding from scratch.
+
+### What We Gain
+
+| Component | Files | Time Saved |
+|-----------|-------|------------|
+| Wagmi hooks with auto ABI resolution | 10 hooks | 12h |
+| Contract utilities & types | 7 utils | 8h |
+| Wagmi/RainbowKit configuration | 3 services | 4h |
+| Wallet connect UI | 4 components | 4h |
+| Debug Contracts page | 3 pages | 6h |
+| Config & types | 3 config | 3h |
+| **Total** | **~30 files** | **~37h** |
+
+### Version Compatibility Matrix
+
+| Package | SE2 Version | AgentTrust Target | Compatible |
+|---------|-------------|-------------------|------------|
+| wagmi | 2.19.5 | 2.x | ✅ |
+| viem | 2.39.0 | 2.x | ✅ |
+| abitype | 1.0.6 | 1.x | ✅ |
+| @rainbow-me/rainbowkit | 2.2.9 | 2.x | ✅ |
+| @tanstack/react-query | 5.59.15 | 5.x | ✅ |
+| zustand | 5.x | 5.x | ✅ |
+| Next.js | 15.x | 14.x | ⚠️ Pin to 14.x |
+| DaisyUI | 5.x | 5.x | ✅ |
+
+> **Note**: SE2 uses Next.js 15.x. Pin AgentTrust to Next.js 14.x. The cherry-picked components are compatible with both.
+
+---
+
+## 2. Prerequisites
+
+Before starting, ensure the following exist:
+
+- [ ] **Foundry project** with deployed contracts on Base (or local Anvil)
+- [ ] **Broadcast artifacts**: `contracts/broadcast/Deploy.s.sol/<chainId>/run-latest.json` exists
+- [ ] **ABI artifacts**: `contracts/out/<Contract>.sol/<Contract>.json` exists for each contract
+- [ ] **Node.js 20+** and npm/pnpm installed
+- [ ] **Next.js 14 project** initialized at `frontend/`
+- [ ] **Git** initialized with clean working tree
+
+Verify:
+
+```bash
+node --version    # v20+
+forge --version   # forge 0.2.x
+ls contracts/broadcast/Deploy.s.sol/*/run-latest.json  # should show at least one
+```
+
+---
+
+## 3. Step 1: Clone SE2 for Reference
+
+Clone SE2 to a temporary directory. We will copy files from it — **not** add it as a dependency.
+
+```bash
+git clone https://github.com/scaffold-eth/scaffold-eth-2.git /tmp/se2-reference
+```
+
+> **Important**: This is a throwaway clone. Do NOT add it to AgentTrust's `package.json` or git submodules.
+
+The files we need are in `/tmp/se2-reference/packages/nextjs/`.
+
+---
+
+## 4. Step 2: Install Dependencies
+
+Install the exact npm packages that SE2's cherry-picked components depend on:
+
+```bash
+cd /a0/usr/projects/agentrust/frontend
+
+# Core Web3 dependencies
+npm install wagmi@^2.19.0 viem@^2.39.0 @rainbow-me/rainbowkit@^2.2.0
+
+# Query/state management
+npm install @tanstack/react-query@^5.59.0 zustand@^5.0.0
+
+# Type definitions
+npm install abitype@^1.0.0
+
+# UI dependencies
+npm install daisyui@^5.0.0 @tailwindcss/typography
+
+# Debug Contracts UI (optional — use npm package or local files)
+npm install @scaffold-ui/debug-contracts@^0.1.7
+```
+
+If you prefer to copy Debug Contracts locally instead of using the npm package, skip the last install.
+
+---
+
+## 5. Step 3: Create Directory Structure
+
+Create the target directory structure inside `frontend/`:
+
+```bash
+# From frontend/ directory
+mkdir -p app/debug
+mkdir -p app/agents
+mkdir -p app/trust
+mkdir -p app/audit
+mkdir -p app/messages
+mkdir -p components/scaffold-eth/hooks
+mkdir -p components/scaffold-eth/utils
+mkdir -p components/scaffold-eth/services
+mkdir -p components/wallet
+mkdir -p components/shared
+mkdir -p config
+mkdir -p utils/scaffold
+```
+
+### Target Structure
+
+```
+frontend/
+├── app/
+│   ├── debug/              ← SE2 Debug Contracts page
+│   │   ├── page.tsx
+│   │   └── DebugContracts.tsx
+│   ├── agents/             ← Custom (Agent Discovery)
+│   ├── trust/              ← Custom (Trust Scores)
+│   ├── audit/              ← Custom (Audit Trail)
+│   ├── messages/           ← Custom (AXL Messages)
+│   ├── layout.tsx          ← Root layout with Web3 providers
+│   └── page.tsx            ← Home / Marketplace
+├── components/
+│   ├── scaffold-eth/       ← SE2 hooks, utils, services (~30 files)
+│   │   ├── hooks/          ← 10 wagmi wrapper hooks
+│   │   ├── utils/          ← 7 utility files
+│   │   └── services/       ← 3 config/state files
+│   ├── wallet/             ← SE2 RainbowKit UI (4 files)
+│   └── shared/             ← Custom AgentTrust components
+├── config/
+│   ├── scaffold.config.ts           ← SE2 configuration
+│   ├── deployedContracts.ts         ← Generated by Foundry bridge script
+│   └── externalContracts.ts         ← ERC-8004, ENS, Uniswap V4 addresses
+└── utils/
+    └── scaffold/                    ← SE2 utility functions
+```
+
+---
+
+## 6. Step 4: Copy Core Files
+
+### SE2 Source Path Convention
+
+All SE2 source paths are relative to `/tmp/se2-reference/packages/nextjs/`.
+All destination paths are relative to `/a0/usr/projects/agentrust/frontend/`.
+
+### Hooks (10 files)
+
+| # | SE2 Source | AgentTrust Destination | Purpose |
+|---|-----------|----------------------|---------|
+| 1 | `hooks/scaffold-eth/useScaffoldReadContract.ts` | `components/scaffold-eth/hooks/useScaffoldReadContract.ts` | Read contract with auto ABI/address |
+| 2 | `hooks/scaffold-eth/useScaffoldWriteContract.ts` | `components/scaffold-eth/hooks/useScaffoldWriteContract.ts` | Write contract with simulation |
+| 3 | `hooks/scaffold-eth/useScaffoldContract.ts` | `components/scaffold-eth/hooks/useScaffoldContract.ts` | Raw viem Contract instance |
+| 4 | `hooks/scaffold-eth/useScaffoldEventHistory.ts` | `components/scaffold-eth/hooks/useScaffoldEventHistory.ts` | Historical event queries |
+| 5 | `hooks/scaffold-eth/useScaffoldWatchContractEvent.ts` | `components/scaffold-eth/hooks/useScaffoldWatchContractEvent.ts` | Real-time event watching |
+| 6 | `hooks/scaffold-eth/useTransactor.tsx` | `components/scaffold-eth/hooks/useTransactor.tsx` | Transaction lifecycle + toasts |
+| 7 | `hooks/scaffold-eth/useDeployedContractInfo.ts` | `components/scaffold-eth/hooks/useDeployedContractInfo.ts` | Resolve ABI+address by name |
+| 8 | `hooks/scaffold-eth/useTargetNetwork.ts` | `components/scaffold-eth/hooks/useTargetNetwork.ts` | Sync target network |
+| 9 | `hooks/scaffold-eth/useSelectedNetwork.ts` | `components/scaffold-eth/hooks/useSelectedNetwork.ts` | Selected network state |
+| 10 | `hooks/scaffold-eth/index.ts` | `components/scaffold-eth/hooks/index.ts` | Barrel exports |
+
+### Utils (7 files)
+
+| # | SE2 Source | AgentTrust Destination | Purpose |
+|---|-----------|----------------------|---------|
+| 1 | `utils/scaffold-eth/contract.ts` | `utils/scaffold/contract.ts` | GenericContractsDeclaration types (400+ lines) |
+| 2 | `utils/scaffold-eth/contractsData.ts` | `utils/scaffold/contractsData.ts` | Merge deployed + external contracts |
+| 3 | `utils/scaffold-eth/networks.ts` | `utils/scaffold/networks.ts` | Network metadata |
+| 4 | `utils/scaffold-eth/notification.tsx` | `utils/scaffold/notification.tsx` | Toast notification component |
+| 5 | `utils/scaffold-eth/getParsedError.ts` | `utils/scaffold/getParsedError.ts` | Error parsing for user-friendly messages |
+| 6 | `utils/scaffold-eth/block.ts` | `utils/scaffold/block.ts` | Block utilities |
+| 7 | `utils/scaffold-eth/common.ts` | `utils/scaffold/common.ts` | Shared utilities |
+
+### Services (3 files)
+
+| # | SE2 Source | AgentTrust Destination | Purpose |
+|---|-----------|----------------------|---------|
+| 1 | `services/web3/wagmiConfig.tsx` | `components/scaffold-eth/services/wagmiConfig.tsx` | Wagmi client configuration |
+| 2 | `services/web3/wagmiConnectors.tsx` | `components/scaffold-eth/services/wagmiConnectors.tsx` | Wallet connector setup |
+| 3 | `services/web3/store.ts` | `components/scaffold-eth/services/store.ts` | Zustand global state |
+
+### Wallet UI (4 files)
+
+| # | SE2 Source | AgentTrust Destination | Purpose |
+|---|-----------|----------------------|---------|
+| 1 | `components/scaffold-eth/RainbowKitCustomConnectButton/` | `components/wallet/RainbowKitCustomConnectButton.tsx` | Custom connect button |
+| 2 | `components/scaffold-eth/RainbowKitCustomConnectButton/AddressInfoDropdown.tsx` | `components/wallet/AddressInfoDropdown.tsx` | Address dropdown |
+| 3 | `components/scaffold-eth/RainbowKitCustomConnectButton/AddressCopyBtn.tsx` | `components/wallet/AddressCopyBtn.tsx` | Copy address |
+| 4 | `components/scaffold-eth/RainbowKitCustomConnectButton/BlockieAvatar.tsx` | `components/wallet/BlockieAvatar.tsx` | Blockie identicon |
+
+### Debug Contracts Page (3 files)
+
+| # | SE2 Source | AgentTrust Destination | Purpose |
+|---|-----------|----------------------|---------|
+| 1 | `app/debug/page.tsx` | `app/debug/page.tsx` | Debug route entry |
+| 2 | `components/scaffold-eth/DebugContracts.tsx` | `app/debug/DebugContracts.tsx` | Contract list renderer |
+| 3 | `components/scaffold-eth/ContractUI.tsx` or use `@scaffold-ui/debug-contracts` | `components/shared/ContractUI.tsx` | Single contract CRUD UI |
+
+> **Option**: Instead of copying `ContractUI.tsx` locally, you can use the `@scaffold-ui/debug-contracts` npm package (v0.1.7) which provides the same auto-generated contract UI.
+
+### Config (3 files)
+
+| # | SE2 Source | AgentTrust Destination | Purpose |
+|---|-----------|----------------------|---------|
+| 1 | `scaffold.config.ts` | `config/scaffold.config.ts` | Main SE2 config |
+| 2 | `types/abi.d.ts` | `config/abi.d.ts` | ABI type declarations |
+| 3 | `postcss.config.js` | `postcss.config.js` | PostCSS for Tailwind |
+
+### Copy Command
+
+```bash
+SE2=/tmp/se2-reference/packages/nextjs
+DEST=/a0/usr/projects/agentrust/frontend
+
+# Hooks
+cp $SE2/hooks/scaffold-eth/useScaffoldReadContract.ts $DEST/components/scaffold-eth/hooks/
+cp $SE2/hooks/scaffold-eth/useScaffoldWriteContract.ts $DEST/components/scaffold-eth/hooks/
+cp $SE2/hooks/scaffold-eth/useScaffoldContract.ts $DEST/components/scaffold-eth/hooks/
+cp $SE2/hooks/scaffold-eth/useScaffoldEventHistory.ts $DEST/components/scaffold-eth/hooks/
+cp $SE2/hooks/scaffold-eth/useScaffoldWatchContractEvent.ts $DEST/components/scaffold-eth/hooks/
+cp $SE2/hooks/scaffold-eth/useTransactor.tsx $DEST/components/scaffold-eth/hooks/
+cp $SE2/hooks/scaffold-eth/useDeployedContractInfo.ts $DEST/components/scaffold-eth/hooks/
+cp $SE2/hooks/scaffold-eth/useTargetNetwork.ts $DEST/components/scaffold-eth/hooks/
+cp $SE2/hooks/scaffold-eth/useSelectedNetwork.ts $DEST/components/scaffold-eth/hooks/
+cp $SE2/hooks/scaffold-eth/index.ts $DEST/components/scaffold-eth/hooks/
+
+# Utils
+cp $SE2/utils/scaffold-eth/contract.ts $DEST/utils/scaffold/
+cp $SE2/utils/scaffold-eth/contractsData.ts $DEST/utils/scaffold/
+cp $SE2/utils/scaffold-eth/networks.ts $DEST/utils/scaffold/
+cp $SE2/utils/scaffold-eth/notification.tsx $DEST/utils/scaffold/
+cp $SE2/utils/scaffold-eth/getParsedError.ts $DEST/utils/scaffold/
+cp $SE2/utils/scaffold-eth/block.ts $DEST/utils/scaffold/
+cp $SE2/utils/scaffold-eth/common.ts $DEST/utils/scaffold/
+
+# Services
+cp $SE2/services/web3/wagmiConfig.tsx $DEST/components/scaffold-eth/services/
+cp $SE2/services/web3/wagmiConnectors.tsx $DEST/components/scaffold-eth/services/
+cp $SE2/services/web3/store.ts $DEST/components/scaffold-eth/services/
+
+# Wallet UI
+cp $SE2/components/scaffold-eth/RainbowKitCustomConnectButton/*.{tsx,ts} $DEST/components/wallet/
+
+# Debug Contracts
+cp $SE2/app/debug/page.tsx $DEST/app/debug/
+cp $SE2/components/scaffold-eth/DebugContracts.tsx $DEST/app/debug/
+
+# Config
+cp $SE2/scaffold.config.ts $DEST/config/
+cp $SE2/types/abi.d.ts $DEST/config/
+cp $SE2/postcss.config.js $DEST/
+```
+
+---
+
+## 7. Step 5: Write the Foundry Bridge Script
+
+This script bridges Foundry deployment artifacts into the `deployedContracts.ts` format that SE2 hooks expect.
+
+### The Bridge Script (`scripts/foundry-bridge.js`)
+
+```javascript
+#!/usr/bin/env node
+
+/**
+ * Foundry → SE2 Bridge Script
+ * 
+ * Reads Foundry broadcast and ABI artifacts, generates
+ * frontend/config/deployedContracts.ts for SE2 hooks.
+ * 
+ * Usage:
+ *   node scripts/foundry-bridge.js [--chain-id 8453] [--broadcast-dir contracts/broadcast]
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+// --- Configuration ---
+const args = process.argv.slice(2);
+const getArg = (name) => {
+  const idx = args.indexOf(`--${name}`);
+  return idx !== -1 ? args[idx + 1] : null;
+};
+
+const PROJECT_ROOT = path.resolve(__dirname, '..');
+const BROADCAST_DIR = path.join(
+  PROJECT_ROOT,
+  getArg('broadcast-dir') || 'contracts/broadcast'
+);
+const OUT_DIR = path.join(PROJECT_ROOT, 'contracts/out');
+const OUTPUT_PATH = path.join(
+  PROJECT_ROOT,
+  'frontend/config/deployedContracts.ts'
+);
+const CHAIN_ID_FILTER = getArg('chain-id'); // null = all chains
+
+// --- Helpers ---
+
+/**
+ * Find all broadcast run-latest.json files
+ */
+function findBroadcastFiles() {
+  const results = [];
+  
+  if (!fs.existsSync(BROADCAST_DIR)) {
+    console.error(`Broadcast directory not found: ${BROADCAST_DIR}`);
+    console.error('Run `forge script script/Deploy.s.sol --broadcast` first.');
+    process.exit(1);
+  }
+  
+  const scriptDirs = fs.readdirSync(BROADCAST_DIR);
+  
+  for (const scriptDir of scriptDirs) {
+    const scriptPath = path.join(BROADCAST_DIR, scriptDir);
+    if (!fs.statSync(scriptPath).isDirectory()) continue;
+    
+    const chainDirs = fs.readdirSync(scriptPath);
+    
+    for (const chainDir of chainDirs) {
+      if (CHAIN_ID_FILTER && chainDir !== CHAIN_ID_FILTER) continue;
+      
+      const broadcastFile = path.join(scriptPath, chainDir, 'run-latest.json');
+      if (fs.existsSync(broadcastFile)) {
+        results.push({
+          chainId: chainDir,
+          script: scriptDir,
+          file: broadcastFile,
+        });
+      }
+    }
+  }
+  
+  return results;
+}
+
+/**
+ * Load ABI from Foundry out/ directory
+ */
+function loadABI(contractName) {
+  // Try multiple naming patterns Foundry uses
+  const candidates = [
+    path.join(OUT_DIR, `${contractName}.sol`, `${contractName}.json`),
+    path.join(OUT_DIR, `${contractName}.json`),
+  ];
+  
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      const artifact = JSON.parse(fs.readFileSync(candidate, 'utf8'));
+      if (artifact.abi) return artifact.abi;
+    }
+  }
+  
+  console.warn(`  ⚠ ABI not found for ${contractName}`);
+  return [];
+}
+
+/**
+ * Parse broadcast file and extract deployed contracts
+ */
+function parseBroadcast(broadcastFile) {
+  const broadcast = JSON.parse(fs.readFileSync(broadcastFile, 'utf8'));
+  const contracts = {};
+  const receipts = broadcast.receipts || [];
+  const transactions = broadcast.transactions || [];
+  
+  for (const tx of transactions) {
+    if (!tx.contractName) continue;
+    
+    const name = tx.contractName;
+    const address = tx.contractAddress || tx.to;
+    const blockNumber = tx.blockNumber;
+    
+    // Find matching receipt for additional info
+    const receipt = receipts.find(r => 
+      r.contractAddress === address || r.transactionHash === tx.hash
+    );
+    
+    // Avoid duplicates (last deployment wins)
+    contracts[name] = {
+      address: address,
+      abi: loadABI(name),
+    };
+    
+    if (blockNumber) {
+      contracts[name].deployedOnBlock = blockNumber;
+    }
+  }
+  
+  return contracts;
+}
+
+// --- Main ---
+
+function main() {
+  console.log('🔨 Foundry → SE2 Bridge');
+  console.log('========================\n');
+  
+  const broadcasts = findBroadcastFiles();
+  
+  if (broadcasts.length === 0) {
+    console.error('No broadcast files found. Deploy contracts first.');
+    process.exit(1);
+  }
+  
+  const allContracts = {};
+  
+  for (const { chainId, script, file } of broadcasts) {
+    console.log(`📡 Processing chain ${chainId} (${script})`);
+    const contracts = parseBroadcast(file);
+    const count = Object.keys(contracts).length;
+    console.log(`   Found ${count} contracts`);
+    
+    // Merge into result (last deployment per chain wins)
+    allContracts[chainId] = {
+      ...allContracts[chainId],
+      ...contracts,
+    };
+  }
+  
+  // Generate TypeScript output
+  const tsContent = generateTypeScript(allContracts);
+  
+  // Ensure output directory exists
+  const outputDir = path.dirname(OUTPUT_PATH);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  
+  fs.writeFileSync(OUTPUT_PATH, tsContent);
+  console.log(`\n✅ Written to ${OUTPUT_PATH}`);
+  
+  // Summary
+  for (const [chainId, contracts] of Object.entries(allContracts)) {
+    console.log(`\nChain ${chainId}:`);
+    for (const name of Object.keys(contracts)) {
+      console.log(`  - ${name}: ${contracts[name].address}`);
+    }
+  }
+}
+
+function generateTypeScript(allContracts) {
+  const contractEntries = Object.entries(allContracts)
+    .map(([chainId, contracts]) => {
+      const contractStr = Object.entries(contracts)
+        .map(([name, data]) => {
+          const abiStr = JSON.stringify(data.abi, null, 4)
+            .split('\n')
+            .map(line => '          ' + line)
+            .join('\n');
+          
+          let entry = `      ${name}: {
+        address: "${data.address}",
+        abi: ${abiStr}`;
+          
+          if (data.deployedOnBlock) {
+            entry += `,
+        deployedOnBlock: ${data.deployedOnBlock}`;
+          }
+          
+          entry += `,
+      }`;
+          return entry;
+        })
+        .join(',\n');
+      
+      return `  "${chainId}": {
+${contractStr},
+  }`;
+    })
+    .join(',\n');
+
+  return `// Autogenerated by scripts/foundry-bridge.js
+// DO NOT EDIT MANUALLY — regenerate after each deployment.
+//
+// Generated at: ${new Date().toISOString()}
+
+import type { GenericContractsDeclaration } from "~~/utils/scaffold/contract";
+
+const deployedContracts = {
+${contractEntries},
+} as const satisfies GenericContractsDeclaration;
+
+export default deployedContracts;
+`;
+}
+
+main();
+```
+
+### Running the Bridge Script
+
+```bash
+# After deploying with Foundry:
+cd /a0/usr/projects/agentrust
+forge script script/Deploy.s.sol --rpc-url $BASE_RPC_URL --broadcast
+
+# Generate deployedContracts.ts:
+node scripts/foundry-bridge.js --chain-id 8453
+
+# Output: frontend/config/deployedContracts.ts
+```
+
+### Output Format
+
+The generated file follows SE2's expected structure:
+
+```typescript
+const deployedContracts = {
+  "8453": {
+    AgentRegistry: {
+      address: "0x...",
+      abi: [...],
+      deployedOnBlock: 12345678,
+    },
+    ServiceAgreement: {
+      address: "0x...",
+      abi: [...],
+    },
+    TrustNFT: {
+      address: "0x...",
+      abi: [...],
+    },
+  },
+} as const satisfies GenericContractsDeclaration;
+
+export default deployedContracts;
+```
+
+---
+
+## 8. Step 6: Configure for Base Chain
+
+### `config/scaffold.config.ts`
+
+Edit the copied config file to target Base:
+
+```typescript
+import type { ScaffoldConfig } from "~~/utils/scaffold/common";
+
+export const scaffoldConfig: ScaffoldConfig = {
+  // The networks you want to support
+  targetNetworks: [
+    {
+      id: 8453,
+      name: "Base",
+      network: "base",
+      nativeCurrency: { name: "Ethereum", symbol: "ETH", decimals: 18 },
+      rpcUrls: {
+        default: { http: ["https://mainnet.base.org"] },
+        public: { http: ["https://mainnet.base.org"] },
+      },
+      blockExplorers: {
+        default: { name: "Basescan", url: "https://basescan.org" },
+      },
+    },
+  ],
+
+  // The polling interval (ms) for your Sapphire, local, or testnet provider
+  pollingInterval: 30000,
+
+  // The chain ID where contracts are deployed
+  onlyLocalBurnerWallet: false,
+};
+```
+
+### Network Configuration in `utils/scaffold/networks.ts`
+
+Ensure Base is defined in the networks array. If it's not already present, add:
+
+```typescript
+import { base } from "wagmi/chains";
+// or define manually:
+export const baseChain = {
+  id: 8453,
+  name: "Base",
+  network: "base",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: {
+    default: { http: ["https://mainnet.base.org"] },
+  },
+  blockExplorers: {
+    default: { name: "Basescan", url: "https://basescan.org" },
+  },
+};
+```
+
+---
+
+## 9. Step 7: Adapt Imports
+
+After copying files, imports reference `~~/` (SE2's path alias). Replace with AgentTrust's path structure.
+
+### Search-Replace Patterns
+
+| SE2 Import | AgentTrust Import | Notes |
+|-----------|-------------------|-------|
+| `~~/hooks/scaffold-eth/` | `@/components/scaffold-eth/hooks/` | Hooks |
+| `~~/utils/scaffold-eth/` | `@/utils/scaffold/` | Utils |
+| `~~/utils/scaffold/` | `@/utils/scaffold/` | Already correct |
+| `~~/services/web3/` | `@/components/scaffold-eth/services/` | Services |
+| `~~/components/scaffold-eth/` | `@/components/scaffold-eth/` | Components |
+| `~~/config/` | `@/config/` | Config |
+| `~~/types/` | `@/config/` | Type files moved to config |
+| `~~/packages/common-constants/` | Remove or hardcode | Not needed |
+
+### Automated Replacement Script
+
+```bash
+cd /a0/usr/projects/agentrust/frontend
+
+# Replace all ~~ imports with @ paths
+find . -type f \( -name "*.ts" -o -name "*.tsx" \) \
+  -exec sed -i 's|~~/hooks/scaffold-eth/|@/components/scaffold-eth/hooks/|g' {} +
+
+find . -type f \( -name "*.ts" -o -name "*.tsx" \) \
+  -exec sed -i 's|~~/utils/scaffold-eth/|@/utils/scaffold/|g' {} +
+
+find . -type f \( -name "*.ts" -o -name "*.tsx" \) \
+  -exec sed -i 's|~~/services/web3/|@/components/scaffold-eth/services/|g' {} +
+
+find . -type f \( -name "*.ts" -o -name "*.tsx" \) \
+  -exec sed -i 's|~~/components/scaffold-eth/|@/components/scaffold-eth/|g' {} +
+
+find . -type f \( -name "*.ts" -o -name "*.tsx" \) \
+  -exec sed -i 's|~~/config/|@/config/|g' {} +
+
+find . -type f \( -name "*.ts" -o -name "*.tsx" \) \
+  -exec sed -i 's|~~/types/|@/config/|g' {} +
+```
+
+### Update `tsconfig.json`
+
+Ensure `@/` path alias is configured:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./*"]
+    }
+  }
+}
+```
+
+---
+
+## 10. Step 8: Verify
+
+### 1. Build Check
+
+```bash
+cd /a0/usr/projects/agentrust/frontend
+npm run build
+```
+
+Fix any TypeScript errors. Common issues:
+- Missing `@/` path alias in tsconfig
+- Import paths not fully updated
+- Type mismatch between Foundry ABI output and `GenericContractsDeclaration`
+
+### 2. Dev Server Check
+
+```bash
+npm run dev
+```
+
+### 3. Verification Checklist
+
+- [ ] `http://localhost:3000` loads without errors
+- [ ] Debug Contracts page at `/debug` shows all deployed contracts
+- [ ] Wallet connects via RainbowKit
+- [ ] Network shows as "Base" (or local Anvil)
+- [ ] Contract read functions display return values
+- [ ] Contract write functions submit transactions
+- [ ] Toast notifications appear for transactions
+- [ ] No console errors related to imports or ABI resolution
+
+### 4. Contract Interaction Test
+
+1. Navigate to `/debug`
+2. Select `AgentRegistry` from the contract list
+3. Try a read function (e.g., `agentCount()`)
+4. Try a write function (e.g., `registerAgent()`)
+5. Verify transaction toast appears and confirms
+
+---
+
+## 11. Files to SKIP
+
+The following SE2 files/components are **not** needed for AgentTrust:
+
+| File/Directory | Reason |
+|---------------|--------|
+| `components/Faucet.tsx` | Hardhat local faucet — not relevant for Base mainnet |
+| `components/FaucetButton.tsx` | Hardhat local faucet — not relevant |
+| `components/RevealBurnerPKModal.tsx` | Burner wallet PK reveal — security risk, not needed |
+| `packages/hardhat/` | Entire Hardhat toolchain — replaced by Foundry |
+| `hooks/scaffold-eth/useFetchBlocks.ts` | Block fetcher — useful but optional for MVP |
+| `components/scaffold-eth/BlockExplorer/` | Block explorer links — optional |
+| `components/scaffold-eth/ProgressBar.tsx` | SE2-specific UI — optional |
+| `components/scaffold-eth/` (root level components) | Various SE2-specific components |
+| `pages/api/` | Server-side API routes — AgentTrust is client-side only |
+| `.env.local` Hardhat variables | Not applicable |
+
+---
+
+## 12. Troubleshooting
+
+### "Cannot find module '@/utils/scaffold/contract'"
+
+**Cause**: Path alias not configured.
+**Fix**: Add `"paths": { "@/*": ["./*"] }` to `tsconfig.json`.
+
+### "Type 'x' is not assignable to type 'GenericContractsDeclaration'"
+
+**Cause**: The `deployedContracts.ts` format doesn't match SE2's expected type.
+**Fix**: Run the bridge script again. Ensure ABIs are valid JSON arrays.
+
+### "useDeployedContractInfo returns undefined"
+
+**Cause**: Contract name doesn't match between Foundry output and hook call.
+**Fix**: Check `deployedContracts.ts` for exact contract names (case-sensitive).
+
+### "Wallet connects but shows wrong network"
+
+**Cause**: `targetNetworks` in `scaffold.config.ts` doesn't match connected chain.
+**Fix**: Update `targetNetworks` to include Base (chain ID 8453).
+
+### "ABI contains 'constructor' entry causing errors"
+
+**Cause**: Foundry includes constructor ABI entries that SE2's ContractUI doesn't handle.
+**Fix**: Filter out constructor entries in the bridge script:
+```javascript
+abi: data.abi.filter(entry => entry.type !== 'constructor'),
+```
+
+### "`as const satisfies` TypeScript error"
+
+**Cause**: TypeScript version < 4.9.
+**Fix**: Update TypeScript: `npm install typescript@^5.3.0`
+
+### "RainbowKit styles broken / missing"
+
+**Cause**: Missing CSS imports.
+**Fix**: Add to `app/layout.tsx`:
+```typescript
+import '@rainbow-me/rainbowkit/styles.css';
+```
+
+---
+
+## 13. Estimated Time
+
+| Step | Time | Notes |
+|------|------|-------|
+| Prerequisites check | 15 min | Verify Foundry artifacts exist |
+| Clone SE2 reference | 5 min | `git clone` |
+| Install dependencies | 15 min | `npm install` |
+| Create directory structure | 10 min | `mkdir -p` commands |
+| Copy core files | 30 min | ~30 files |
+| Write bridge script | 60 min | Includes testing |
+| Configure for Base | 30 min | Config files |
+| Adapt imports | 60 min | Search-replace + manual fixes |
+| Verify & debug | 90 min | Build, dev server, manual testing |
+| **Total** | **7–9 hours** | Depends on debugging needed |
+
+> **Compare**: Rebuilding these components from scratch would take **52+ hours**.

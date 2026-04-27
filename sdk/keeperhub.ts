@@ -22,10 +22,10 @@ export interface KeeperConfig {
 }
 
 export class KeeperHubClient {
-  private readonly config: KeeperConfig;
+  private readonly _config: KeeperConfig;
 
   constructor(config: KeeperConfig) {
-    this.config = config;
+    this._config = config;
   }
 
   async submitTask(

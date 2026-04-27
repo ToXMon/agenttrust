@@ -1,11 +1,16 @@
 # AgentTrust — Build Plan
 
-> **10 sessions. 8 days. 1 goal: win $35K+.**
+> **12 sessions. 8 days. 1 goal: win $35K+.**
 >
 > Each session = ONE workpack. Execute it. Verify it. Update progress.json. Hand off.
 >
 > **Entry prompt for every new session:**
 > `Read and execute the next incomplete workpack from BUILD-PLAN.md. Load progress from progress.json first.`
+
+> **Key Integration Guides (read before executing):**
+> - SE2 Cherry-Pick: `docs/SE2-INTEGRATION-GUIDE.md`
+> - ethskills Reference: `docs/ETHSKILLS-REFERENCE.md`
+> - Deployment Strategy: `docs/DEPLOYMENT-STRATEGY.md`
 
 ---
 
@@ -41,6 +46,95 @@
 | `submission` | Final ETHGlobal submission | One chance |
 
 All other decisions: **autonomous. No approval needed.**
+
+---
+
+## Workpack 0: SE2 Frontend Foundation + ethskills Setup
+
+**Session budget:** ~25% context
+**Priority:** CRITICAL (unblocks all frontend work)
+**Sponsor tracks:** All (provides Debug Contracts page + wallet UI)
+**Reference docs:** `docs/SE2-INTEGRATION-GUIDE.md`, `docs/ETHSKILLS-REFERENCE.md`
+
+### Why This Workpack Exists
+AgentTrust's frontend (`frontend/`) is completely empty — only `.gitkeep` placeholders.
+Cherry-picking scaffold-eth-2 (SE2) components provides:
+- **Debug Contracts page** — auto-generated CRUD UI for AgentRegistry, TrustNFT, ServiceAgreement (saves 16+ hours)
+- **10 wagmi/viem hooks** — type-safe blockchain interaction (saves 12 hours)
+- **RainbowKit wallet UI** — wallet connect + network switching (saves 4 hours)
+- **Provider/wagmi config** — Base chain setup (saves 3 hours)
+- **Total: ~37 hours saved vs building from scratch**
+
+ethskills provides verified Base chain addresses, ERC-8004 commerce flow code, and security patterns — zero coupling, pure reference.
+
+### Tasks
+1. **SE2 Cherry-Pick** — Follow `docs/SE2-INTEGRATION-GUIDE.md` step by step:
+   - Step 1: Clone SE2 reference: `git clone --depth 1 https://github.com/scaffold-eth/scaffold-eth-2.git /tmp/se2-reference`
+   - Step 2: Install npm dependencies (wagmi@2, viem@2, @rainbow-me/rainbowkit@2, @tanstack/react-query@5, zustand@5, daisyui@5, @scaffold-ui/debug-contracts)
+   - Step 3: Create directory structure in `frontend/` (see SE2 guide section 4)
+   - Step 4: Copy ~35 core files from SE2 into AgentTrust:
+     - 10 hooks (useScaffoldRead, useScaffoldWrite, useScaffoldContract, useScaffoldEventHistory, useWatchContractEvent, useTransactor, useDeployedContractInfo, useTargetNetwork, useSelectedNetwork, useFetchBlocks)
+     - 7 utils (contract.ts, contractsData.ts, networks.ts, notification.tsx, getParsedError.ts, block.ts, common.ts)
+     - 3 services (wagmiConfig.tsx, wagmiConnectors.tsx, store.ts)
+     - 4 wallet UI files (RainbowKitCustomConnectButton + 3 subcomponents, BlockieAvatar)
+     - 3 debug page files (page.tsx, DebugContracts.tsx, ContractUI.tsx)
+     - 3 config files (scaffold.config.ts, abi.d.ts, postcss.config.js)
+   - Step 5: Write the Foundry bridge script (`scripts/foundry-bridge.js`) — reads Forge broadcast + ABI artifacts → generates `frontend/config/deployedContracts.ts`. Full script code is in SE2 guide section 7.
+   - Step 6: Configure `scaffold.config.ts` for Base chain (chainId 8453, Base Sepolia 84532 for testnet)
+   - Step 7: Adapt imports (search-replace patterns in SE2 guide section 9)
+   - Step 8: Verify — `npm run dev`, Debug Contracts page loads at `/debug`, wallet connects
+2. **ethskills Fetch** — Follow `docs/ETHSKILLS-REFERENCE.md`:
+   - Fetch priority skills to `docs/reference/ethskills/`:
+     ```bash
+     mkdir -p docs/reference/ethskills
+     curl -o docs/reference/ethskills/standards.md https://ethskills.com/standards/SKILL.md
+     curl -o docs/reference/ethskills/addresses.md https://ethskills.com/addresses/SKILL.md
+     curl -o docs/reference/ethskills/security.md https://ethskills.com/security/SKILL.md
+     curl -o docs/reference/ethskills/testing.md https://ethskills.com/testing/SKILL.md
+     curl -o docs/reference/ethskills/building-blocks.md https://ethskills.com/building-blocks/SKILL.md
+     curl -o docs/reference/ethskills/indexing.md https://ethskills.com/indexing/SKILL.md
+     ```
+   - Extract ERC-8004 addresses on Base into `frontend/config/externalContracts.ts`
+   - Extract verified addresses (USDC, WETH, Uniswap V2/V3/V4, ENS, Aerodrome on Base)
+3. **Wire external contracts** — Create `frontend/config/externalContracts.ts` with:
+   - ERC-8004 IdentityRegistry (`0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`) + ReputationRegistry (`0x8004BAa17C55a88189AE136b182e5fdA19dE9b63`) on Base
+   - ENS registry address
+   - Uniswap V2/V3/V4 router addresses on Base
+   - USDC + WETH token addresses on Base
+
+### Files Created/Modified
+```
+frontend/
+├── app/debug/page.tsx              ← SE2 Debug Contracts
+├── components/scaffold-eth/         ← ~15 hook files + 7 utils + 3 services
+├── components/wallet/               ← 4 RainbowKit UI files
+├── config/
+│   ├── scaffold.config.ts          ← Base chain config
+│   ├── deployedContracts.ts        ← Placeholder (generated after contract deploy)
+│   └── externalContracts.ts        ← ERC-8004, ENS, Uniswap addresses
+├── utils/scaffold/                  ← SE2 utility functions
+scripts/foundry-bridge.js           ← Foundry → deployedContracts.ts bridge
+docs/reference/ethskills/            ← 6 fetched skill documents
+```
+
+### Subordinate Delegation
+| Task | Profile | Reference |
+|------|---------|----------|
+| Cherry-pick SE2 components | `frontend_engineer` | `docs/SE2-INTEGRATION-GUIDE.md` |
+| Write Foundry bridge script | `developer` | SE2 guide section 7 |
+| Fetch ethskills + wire addresses | `backend_engineer` | `docs/ETHSKILLS-REFERENCE.md` |
+
+### Verification
+- [ ] `npm run dev` starts without errors
+- [ ] Debug Contracts page renders at `/debug`
+- [ ] RainbowKit wallet connect button appears in layout
+- [ ] Base chain configured in scaffold.config.ts
+- [ ] Foundry bridge script runs without errors
+- [ ] ethskills reference docs fetched to `docs/reference/ethskills/`
+- [ ] externalContracts.ts has ERC-8004 + Uniswap + ENS addresses on Base
+
+### Commit
+`feat: scaffold-eth-2 frontend foundation with ethskills reference integration`
 
 ---
 
@@ -145,9 +239,9 @@ All other decisions: **autonomous. No approval needed.**
 
 ---
 
-## Workpack 4: Deploy Script + Base Deployment + Akash SDLs + Cloudflare D1
+## Workpack 4: Deploy Script + Base Deployment
 
-**Session budget:** ~25% context
+**Session budget:** ~20% context
 **Priority:** HIGH
 **Sponsor tracks:** All (contracts needed for demo)
 **🚨 HUMAN GATE: contract_deploy**
@@ -161,33 +255,19 @@ All other decisions: **autonomous. No approval needed.**
 3. Verify contracts on BaseScan
 4. Save deployment addresses to `contracts/deployments.json`
 5. **Request human gate approval before deploying**
-6. Create 3 Akash SDL files:
-   - `deploy/akash/orchestrator.yaml` — Agent orchestrator (2 CPU, 4Gi RAM, 10Gi storage)
-   - `deploy/akash/axl-node-alpha.yaml` — AXL Node 1 / researcher agent (1 CPU, 2Gi RAM, 5Gi storage)
-   - `deploy/akash/axl-node-beta.yaml` — AXL Node 2 / provider agent (1 CPU, 2Gi RAM, 5Gi storage)
-7. Validate SDLs: `provider-services tx deployment create --dry-run` for each
-8. Create Cloudflare D1 database schema:
-   - `interactions` table (agent interactions log)
-   - `agents` table (registered agent metadata cache)
-   - `trust_scores` table (trust score history)
-   - Schema file: `deploy/cloudflare/d1-schema.sql`
-
-> **Note:** Use FUNDED Akash deployment (not trial — 24h limit on trial deployments).
-> **Note:** Custom domain via Cloudflare CNAME pointing to Akash endpoints.
 
 ### Verification
 - [ ] Deploy script runs successfully in simulation (`forge script --dry-run`)
 - [ ] Contracts deployed to Base Sepolia
 - [ ] Addresses saved to deployments.json
 - [ ] No plaintext private keys
-- [ ] 3 Akash SDLs validate with `provider-services tx deployment create --dry-run`
-- [ ] Cloudflare D1 schema created
 
 ### Commit
-`feat: deploy script, Akash SDLs, Cloudflare D1 schema for Base Sepolia deployment`
+`feat: deploy script with Base Sepolia deployment`
+
 ---
 
-## Workpack 5: Gensyn AXL Setup (Akash Containers)
+## Workpack 5: Gensyn AXL Setup
 
 **Session budget:** ~25% context
 **Priority:** CRITICAL
@@ -200,24 +280,17 @@ All other decisions: **autonomous. No approval needed.**
 4. Implement `axl/protocol.ts` — AgentTrust message schema
 5. Implement `axl/message-handler.ts` — trust verification over AXL
 6. Implement `axl/trust-verify.ts` — capability verification protocol
-7. Deploy AXL containers to Akash:
-   - Deploy `axl-node-alpha` container from `deploy/akash/axl-node-alpha.yaml`
-   - Deploy `axl-node-beta` container from `deploy/akash/axl-node-beta.yaml`
-   - Nodes run on Akash containers, NOT localhost — separate IPs for Gensyn qualification
-8. Configure Cloudflare CNAME for AXL endpoints:
-   - `axl-alpha.agenttrust.xyz` → Akash Node 1
-   - `axl-beta.agenttrust.xyz` → Akash Node 2
-9. Test: send message from Node 1 to Node 2 and verify receipt
+7. Test: send message from Node 1 to Node 2 and verify receipt
 
 ### Verification
-- [ ] 2 AXL nodes running on Akash containers (different IPs)
+- [ ] 2 AXL nodes running on different ports
 - [ ] Messages sent from Node 1 received at Node 2
 - [ ] Trust verification message schema works
-- [ ] NOT in-process — real P2P across separate Akash containers
-- [ ] Cloudflare CNAME resolves to AXL endpoints
+- [ ] NOT in-process — real P2P across nodes
 
 ### Commit
-`feat: Gensyn AXL P2P on Akash containers with Cloudflare CNAME endpoints`
+`feat: Gensyn AXL P2P communication with trust verification protocol`
+
 ---
 
 ## Workpack 6: Agent Implementations + ENS
@@ -256,7 +329,7 @@ All other decisions: **autonomous. No approval needed.**
 
 ---
 
-## Workpack 7: Uniswap + KeeperHub + Cloudflare Queues
+## Workpack 7: Uniswap + KeeperHub Integration
 
 **Session budget:** ~25% context
 **Priority:** HIGH
@@ -281,21 +354,16 @@ All other decisions: **autonomous. No approval needed.**
    - Verification protocol
    - Trust threshold checking
 4. Wire up: agent payment flow uses Uniswap → KeeperHub execution
-5. Set up Cloudflare Queues for demo trigger jobs:
-   - Create queue: `demo-trigger-queue`
-   - Queue consumer sends HTTP requests to Akash orchestrator
-   - Config file: `deploy/cloudflare/wrangler.toml` (queues section)
-6. Wire Queue consumer to Akash orchestrator endpoint
 
 ### Verification
 - [ ] Uniswap quote API returns valid quotes
 - [ ] KeeperHub MCP connection established
 - [ ] Transaction retry logic works
 - [ ] FEEDBACK.md has real integration notes
-- [ ] Cloudflare Queue created and consumer wired
 
 ### Commit
-`feat: Uniswap API + KeeperHub MCP + Cloudflare Queues for demo orchestration`
+`feat: Uniswap API + KeeperHub MCP integration with trust-gated payments`
+
 ---
 
 ## Workpack 8: 0G Storage + Compute + Wallet
@@ -329,60 +397,78 @@ All other decisions: **autonomous. No approval needed.**
 
 ---
 
-## Workpack 9: Frontend Dashboard (Cloudflare Pages)
+## Workpack 9: Frontend Dashboard (SE2-Enhanced)
 
 **Session budget:** ~25% context
-**Priority:** MEDIUM
+**Priority:** HIGH (was MEDIUM — elevated because SE2 foundation makes this faster)
 **Sponsor tracks:** All (visual demo for judges)
+**Prerequisites:** Workpack 0 completed (SE2 foundation + ethskills in place)
+**Reference docs:** `docs/SE2-INTEGRATION-GUIDE.md`, `docs/DEPLOYMENT-STRATEGY.md`
 
-### Tasks
-1. Set up Next.js 14 in `/frontend/` with TailwindCSS
-2. Install Stripe DESIGN.md: `npx getdesign@latest add stripe`
-3. Configure `@opennextjs/cloudflare` adapter for Cloudflare Pages deployment
-4. Set up Cloudflare D1 database:
-   - Create D1 database via `wrangler d1 create agenttrust-db`
-   - Apply schema from `deploy/cloudflare/d1-schema.sql`
-   - Bind D1 in `wrangler.toml`
-5. Set up Cloudflare Workers API routes:
-   - `/api/agents` — agent listing from D1 cache
-   - `/api/interactions` — interaction history from D1
-   - `/api/trust-scores` — trust score data
-   - `/api/demo-trigger` — enqueue demo job to Cloudflare Queue
-6. Set up Cloudflare Durable Objects for WebSocket real-time feed:
-   - Replaces SSE polling with true WebSocket push
-   - `AgentTrustRoom` DO class manages connections
-   - Real-time message log + trust score updates
-   - WebSocket Hibernation for cost efficiency
-7. Set up Cloudflare R2 for audit log storage:
-   - Create R2 bucket: `agenttrust-audit-logs`
-   - Zero egress cost for audit trail retrieval
-   - Bind R2 in `wrangler.toml`
-8. Build pages:
-   - `/` — Marketplace home (agent cards, trust scores)
-   - `/agents` — Agent profiles with ENS identity
-   - `/trust` — Trust score explorer (iNFT visualization)
-   - `/messages` — AXL message log (real-time via Durable Objects WebSocket)
-   - `/audit` — Transaction audit trail (KeeperHub + R2 logs)
-9. Build components:
-   - `AgentCard.tsx` — Agent with trust score badge
-   - `TrustScore.tsx` — Visual trust score gauge
-   - `MessageLog.tsx` — Real-time AXL message feed (WebSocket)
-   - `TransactionFeed.tsx` — On-chain transaction history
-10. Deploy to Cloudflare Pages (NOT Vercel)
+### What SE2 Already Provides (from Workpack 0)
+- ✅ Debug Contracts page at `/debug` (auto-generated CRUD for all 3 contracts)
+- ✅ RainbowKit wallet connection
+- ✅ 10 type-safe wagmi/viem hooks
+- ✅ Base chain provider configuration
+- ✅ Transaction notification system
+
+### Tasks — Build Custom Dashboard Pages
+1. **Agent Discovery Page** (`/agents`):
+   - Use `useScaffoldRead` hook to query AgentRegistry
+   - Agent cards with trust score badges from TrustNFT
+   - ENS name resolution display
+   - Capability tags from agent metadata
+   - Search/filter by capability
+2. **Trust Score Explorer** (`/trust`):
+   - Visual trust score gauge component
+   - TrustNFT iNFT visualization
+   - Score breakdown (totalTasks, completedTasks, avgRating, totalEarned)
+   - Score history chart (if data available)
+   - Use `useScaffoldRead` to read trust scores
+3. **AXL Message Log** (`/messages`):
+   - Real-time message feed from Gensyn AXL P2P
+   - Message type indicators (discovery, trust-verify, negotiate, payment)
+   - Sender/receiver ENS names
+   - Trust verification status per message
+   - Connect to `axl/message-handler.ts`
+4. **Audit Trail** (`/audit`):
+   - Transaction history from on-chain events
+   - Service agreement lifecycle visualization
+   - KeeperHub execution logs
+   - Event filters by agent, agreement, date
+   - Use `useScaffoldEventHistory` for on-chain events
+5. **Marketplace Home** (`/`):
+   - Hero section with project overview
+   - Featured agents with highest trust scores
+   - Recent service agreements
+   - Quick action: register agent, create agreement
+   - Stats dashboard (total agents, agreements, trust score average)
+6. **Layout + Navigation**:
+   - Sidebar or top nav with all routes
+   - Wallet connection in header (from SE2 RainbowKit)
+   - Network indicator (Base Mainnet / Base Sepolia)
+   - Responsive design with TailwindCSS + DaisyUI 5
+7. **Install DaisyUI 5** (if not done in Workpack 0):
+   - `npm install daisyui@5`
+   - Add to Tailwind config
+   - Use DaisyUI components for cards, badges, modals, alerts
 
 ### Verification
-- [ ] All 5 pages render correctly
-- [ ] Trust scores display from on-chain data
-- [ ] Messages show AXL communication (real-time WebSocket)
-- [ ] Live URL accessible on Cloudflare Pages
-- [ ] D1 database queries working
-- [ ] R2 audit log storage working
-- [ ] Durable Objects WebSocket feed operational
+- [ ] All 5 custom pages render correctly
+- [ ] Trust scores display from on-chain TrustNFT data
+- [ ] Messages show AXL communication in real-time
+- [ ] Audit trail shows on-chain events
+- [ ] Wallet connects via RainbowKit
+- [ ] Debug Contracts page still works at `/debug`
+- [ ] Responsive on mobile
+- [ ] DaisyUI 5 theme applied
 
 ### Commit
-`feat: Next.js frontend on Cloudflare Pages with D1, Durable Objects, R2`
+`feat: AgentTrust dashboard pages — agents, trust, messages, audit, marketplace`
 
-## Workpack 10: Demo + Submit (Cloudflare + Akash Deployment)
+---
+
+## Workpack 10: Demo + Submit
 
 **Session budget:** ~20% context
 **Priority:** CRITICAL
@@ -394,68 +480,78 @@ All other decisions: **autonomous. No approval needed.**
    - Full 7-step automated demo flow
    - Register both agents → discover → verify → negotiate → agree → pay → trust update
    - Run against deployed contracts on Base
-2. Deploy to Akash (3 containers):
-   - `deploy/akash/orchestrator.yaml` — Agent orchestrator + cron
-   - `deploy/akash/axl-node-alpha.yaml` — AXL Node 1
-   - `deploy/akash/axl-node-beta.yaml` — AXL Node 2
-   - Use FUNDED deployment (not trial — 24h limit)
-3. Deploy to Cloudflare:
-   - Cloudflare Pages: frontend dashboard
-   - Cloudflare Workers: API routes + Queue consumer
-   - Cloudflare D1: database with schema applied
-   - Cloudflare Durable Objects: WebSocket real-time feed
-   - Cloudflare R2: audit log bucket
-   - Cloudflare Queues: demo trigger queue
-4. Verify all Cloudflare services operational:
-   - `wrangler pages deploy` succeeds
-   - D1 database accessible
-   - R2 bucket writable
-   - Durable Objects WebSocket connects
-   - Queue consumer processes messages
-5. Warm-start: run 5 sequential demos on deploy to populate dashboard
-6. Auto-demo scheduler on Akash orchestrator (every 4 minutes):
-   - Cron job triggers demo scenario
-   - Ensures dashboard always has fresh data for judges
-7. Configure custom domain (agenttrust.xyz or similar):
-   - Cloudflare DNS CNAME to Pages
-   - SSL via Cloudflare
-   - Verify domain resolves
-8. Run end-to-end demo and capture:
+2. Run end-to-end demo and capture:
    - Terminal output showing each step
    - Screenshots of frontend dashboard
    - Transaction hashes on Base
-9. Record demo video (4 minutes max):
+3. Record demo video (4 minutes max):
    - Who we are + why this project
    - How it works (architecture walkthrough)
    - Live demo of the 7-step flow
    - Sponsor alignment summary
-10. Finalize all feedback docs:
-    - `FEEDBACK.md` (Uniswap — MANDATORY)
-    - `KEEPERHUB_FEEDBACK.md`
-    - `AI_USAGE.md`
-11. Update README.md with:
-    - Architecture diagram
-    - Setup instructions
-    - Demo results
-    - Sponsor qualification evidence
-12. **Request human gate approval for submission**
-13. Submit at https://ethglobal.com/events/openagents/submit
+4. Finalize all feedback docs:
+   - `FEEDBACK.md` (Uniswap — MANDATORY)
+   - `KEEPERHUB_FEEDBACK.md`
+   - `AI_USAGE.md`
+5. Update README.md with:
+   - Architecture diagram
+   - Setup instructions
+   - Demo results
+   - Sponsor qualification evidence
+6. Verify deployment on all 3 layers (Workpack 11)
+7. **Request human gate approval for submission**
+8. Submit at https://ethglobal.com/events/openagents/submit
 
 ### Verification
 - [ ] Demo runs end-to-end without errors
-- [ ] 3 Akash containers deployed and running
-- [ ] All Cloudflare services operational
-- [ ] Auto-demo scheduler running every 4 minutes
-- [ ] Custom domain resolves with SSL
 - [ ] Video under 4 minutes
 - [ ] FEEDBACK.md complete and detailed
 - [ ] README shows all sponsor qualifications
 - [ ] All contracts deployed and verified
 - [ ] Frontend live and accessible
+- [ ] Deployment live on Vercel (primary) + Akash (backup)
 - [ ] Submitted before 12pm NOON ET May 3
 
 ### Final Commit
-`chore: final submission — Akash + Cloudflare deployment, demo video, feedback docs`
+`chore: final submission — demo video, feedback docs, README polish`
+
+---
+
+## Workpack 11: Triple-Layer Deployment
+
+**Session budget:** ~15% context
+**Priority:** HIGH
+**Sponsor tracks:** All (live URL required for finalist track)
+**Reference doc:** `docs/DEPLOYMENT-STRATEGY.md`
+
+### Tasks
+1. **Vercel Deployment (Primary)**:
+   - Connect GitHub repo to Vercel
+   - Set root directory to `frontend/`
+   - Add environment variables (NEXT_PUBLIC_CHAIN_ID, RPC URLs, contract addresses)
+   - Deploy and verify live URL
+2. **Akash Deployment (Decentralized Backup)**:
+   - Build Docker image for Next.js frontend
+   - Write Akash SDL (see DEPLOYMENT-STRATEGY.md section 4)
+   - Deploy via Console API (credit card) or CLI (funded wallet)
+   - Note: If using trial, 24h auto-closure — redeploy daily
+3. **IPFS + ENS (Permanent)**:
+   - Build static export of frontend
+   - Pin to IPFS via Fleek or Pinata
+   - Set `agenttrust.eth` contenthash to IPFS CID
+   - Verify resolution at `agenttrust.eth.limo`
+4. **Verify all 3 URLs work** and update README with links
+
+### Verification
+- [ ] Vercel URL live and serving frontend
+- [ ] Akash URL live (or SDL ready to deploy)
+- [ ] IPFS hash pinned and resolving via ENS
+- [ ] All 3 URLs show the same frontend
+- [ ] Demo video shows at least 2 deployment layers
+
+### Commit
+`feat: triple-layer deployment — Vercel + Akash + IPFS/ENS`
+
 ---
 
 ## Session Checklist (copy at start of each session)

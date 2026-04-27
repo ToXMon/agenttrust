@@ -11,55 +11,10 @@ AgentTrust is a trust-scored agent commerce protocol enabling verifiable, escrow
 3. **Escrowed payments**: Funds locked until verified delivery
 4. **Decentralized audit**: All interactions recorded on-chain and on 0G Storage
 5. **Protocol-agnostic**: Agents communicate via AXL, execute via any MCP-compatible runner
-6. **Edge-native**: Frontend on Cloudflare edge (Pages + Workers), agents on Akash decentralized cloud
 
 ---
 
-## Deployment Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     AgentTrust Deployment                        │
-│                                                                 │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              Cloudflare Edge (Frontend + API)             │   │
-│  │                                                           │   │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐              │   │
-│  │  │  Pages    │  │ Workers  │  │    D1    │              │   │
-│  │  │ (Next.js) │  │(API routes)│  │ (SQLite) │              │   │
-│  │  └──────────┘  └──────────┘  └──────────┘              │   │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐              │   │
-│  │  │ Durable  │  │  Queues  │  │    R2    │              │   │
-│  │  │ Objects  │  │(demo trig)│  │(audit log)│              │   │
-│  │  │(WebSocket)│  │          │  │          │              │   │
-│  │  └──────────┘  └──────────┘  └──────────┘              │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                              │                                  │
-│                    Cloudflare DNS + SSL                         │
-│                   (agenttrust.xyz)                              │
-│                              │                                  │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              Akash Decentralized Cloud (Agents)           │   │
-│  │                                                           │   │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐              │   │
-│  │  │Container 1│  │Container 2│  │Container 3│              │   │
-│  │  │Orchestr.  │  │AXL Alpha │  │AXL Beta  │              │   │
-│  │  │2CPU/4Gi   │  │1CPU/2Gi  │  │1CPU/2Gi  │              │   │
-│  │  │+cron sched│  │Researcher│  │Provider  │              │   │
-│  │  └──────────┘  └──────────┘  └──────────┘              │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                              │                                  │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              Base Sepolia (Smart Contracts)               │   │
-│  │                                                           │   │
-│  │  AgentRegistry  │  TrustNFT (ERC-7857)  │  ServiceAgreement│   │
-│  └─────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Layer 1: Smart Contracts (Base Sepolia)
+## Layer 1: Smart Contracts (Base)
 
 ### AgentRegistry (ERC-721)
 - Registers agents with ENS names
@@ -94,81 +49,7 @@ Design: Trust is hard to build, easy to lose. Asymmetric scoring.
 
 ---
 
-## Layer 2: Cloudflare Edge (Frontend + API)
-
-### Cloudflare Pages — Frontend Hosting
-- Next.js 14 with `@opennextjs/cloudflare` adapter
-- Edge-rendered pages for global low-latency
-- Custom domain: agenttrust.xyz via Cloudflare DNS
-- SSL via Cloudflare (automatic)
-
-### Cloudflare Workers — API Routes
-- `/api/agents` — Agent listing from D1 cache
-- `/api/interactions` — Interaction history from D1
-- `/api/trust-scores` — Trust score data from D1
-- `/api/demo-trigger` — Enqueue demo job to Cloudflare Queue
-- Replaces Vercel serverless functions
-
-### Cloudflare D1 — SQLite Database
-- `interactions` table: Agent interaction log (agent IDs, timestamps, results)
-- `agents` table: Registered agent metadata cache (ENS names, capabilities, status)
-- `trust_scores` table: Trust score history (agent ID, score, timestamp, delta)
-- Schema file: `deploy/cloudflare/d1-schema.sql`
-- Bound via `wrangler.toml`
-
-### Cloudflare Durable Objects — WebSocket Real-time Feed
-- `AgentTrustRoom` DO class manages WebSocket connections
-- Replaces SSE polling with true WebSocket push
-- Real-time updates for: AXL message log, trust score changes, transaction status
-- WebSocket Hibernation API for cost efficiency (pay only while active)
-- Connection flow: Client → Workers → Durable Object → WebSocket
-
-### Cloudflare Queues — Demo Trigger Jobs
-- Queue: `demo-trigger-queue`
-- Consumer: Workers function → HTTP POST to Akash orchestrator
-- Used for scheduled demo execution and warm-start
-- At-least-once delivery guarantee
-
-### Cloudflare R2 — Audit Log Storage
-- Bucket: `agenttrust-audit-logs`
-- Stores: Interaction logs, transaction receipts, dispute evidence
-- Zero egress cost (S3-compatible API)
-- Bound via `wrangler.toml`
-
----
-
-## Layer 3: Akash Decentralized Cloud (Agent Workers)
-
-### Container 1: Orchestrator
-- **SDL**: `deploy/akash/orchestrator.yaml`
-- **Resources**: 2 CPU, 4Gi RAM, 10Gi storage
-- **Purpose**: Agent orchestrator + cron demo scheduler
-- **Runs**: Agent coordination logic, auto-demo every 4 minutes
-- **Endpoint**: `orchestrator.agenttrust.xyz` (Cloudflare CNAME)
-
-### Container 2: AXL Node Alpha (Researcher Agent)
-- **SDL**: `deploy/akash/axl-node-alpha.yaml`
-- **Resources**: 1 CPU, 2Gi RAM, 5Gi storage
-- **Purpose**: Gensyn AXL node for researcher/requester agent
-- **Runs**: AXL P2P communication, service discovery, trust verification
-- **Endpoint**: `axl-alpha.agenttrust.xyz` (Cloudflare CNAME)
-
-### Container 3: AXL Node Beta (Provider Agent)
-- **SDL**: `deploy/akash/axl-node-beta.yaml`
-- **Resources**: 1 CPU, 2Gi RAM, 5Gi storage
-- **Purpose**: Gensyn AXL node for provider agent
-- **Runs**: AXL P2P communication, service execution, result delivery
-- **Endpoint**: `axl-beta.agenttrust.xyz` (Cloudflare CNAME)
-
-### Why Separate Akash Containers?
-- Gensyn AXL prize requires communication across **separate nodes** (not in-process)
-- Each container gets a **different IP address** → qualifies as real P2P
-- Isolated failure domains — one container crash doesn't take down both agents
-- **Funded deployment** (not trial — 24h limit on trial)
-
----
-
-## Layer 4: Agent Communication (Gensyn AXL)
+## Layer 2: Agent Communication (AXL)
 
 ### Protocol Messages
 | Type | Direction | Purpose |
@@ -185,11 +66,10 @@ Design: Trust is hard to build, easy to lose. Asymmetric scoring.
 - Every AXL message includes sender ENS
 - Trust scores checked before accepting agreements
 - Trust verification is configurable per-threshold
-- Nodes communicate via Cloudflare CNAME endpoints
 
 ---
 
-## Layer 5: SDK Integrations
+## Layer 3: SDK Integrations
 
 ### ENS SDK
 - Agent identity registration and resolution
@@ -221,8 +101,7 @@ Design: Trust is hard to build, easy to lose. Asymmetric scoring.
 ## Data Flow
 
 ```
-Requester                AXL (Akash)              Provider
-(AXL Alpha)          (Cloudflare CNAME)          (AXL Beta)
+Requester                    AXL                     Provider
     |                         |                         |
     |-- DISCOVER ------------>|                         |
     |                         |<------------ INTRODUCE -|
@@ -233,32 +112,13 @@ Requester                AXL (Akash)              Provider
     |                         |                         |
     |                         |<-- SERVICE_ACCEPT ------|
     |                         |                         |
-    |-- AGREEMENT_CREATE ---> [ServiceAgreement on Base]
+    |-- AGREEMENT_CREATE ---> [ServiceAgreement Contract]
     |                         |                         |
     |                         |<-- SERVICE_RESULT ------|
     |-- VERIFY (0G hash) ---> [TrustNFT Score Update]
     |                         |                         |
-    |-- AGREEMENT_SETTLE ---> [Payment via Uniswap]
-    |                         |                         |
-    └──── Dashboard update ──> [Cloudflare DO WebSocket]
+    |-- AGREEMENT_SETTLE ---> [Payment Release]
 ```
-
----
-
-## Cost Analysis
-
-| Service | Tier | Monthly Cost |
-|---------|------|-------------|
-| Cloudflare Pages | Free | $0 |
-| Cloudflare Workers | Free (100K req/day) | $0 |
-| Cloudflare D1 | Free (5GB, 5M reads) | $0 |
-| Cloudflare Durable Objects | Free (1M req) | $0 |
-| Cloudflare Queues | Free (1M ops) | $0 |
-| Cloudflare R2 | Free (10GB, 1M class A) | $0 |
-| Akash (3 containers) | Trial credits ($100) | $0 |
-| Base Sepolia | Testnet (free ETH) | $0 |
-| **Custom Domain** | Cloudflare Registrar | ~$10/year |
-| **TOTAL** | | **~$0/month** |
 
 ---
 
@@ -270,6 +130,82 @@ Requester                AXL (Akash)              Provider
 - **Trust Integrity**: Only ServiceAgreement can update trust scores
 - **Soul-bound**: TrustNFTs cannot be transferred or sold
 - **Custom Errors**: Gas-efficient error handling throughout
-- **Cloudflare**: DDoS protection, WAF, SSL termination built-in
-- **Akash**: Isolated containers, no shared state, encrypted certificates
-- **No secrets in frontend**: All sensitive keys in Akash orchestrator env vars
+
+---
+
+## Frontend Architecture (SE2-Enhanced)
+
+### scaffold-eth-2 Integration Layer
+
+AgentTrust uses a **cherry-picked subset** of [scaffold-eth-2](https://github.com/scaffold-eth/scaffold-eth-2) for the frontend. We do NOT fork SE2 — we extract specific components that provide maximum value.
+
+#### What SE2 Provides
+| Component | Purpose | Location |
+|-----------|---------|----------|
+| Debug Contracts Page | Auto-generated CRUD UI from contract ABIs | `frontend/app/debug/` |
+| 10 wagmi/viem Hooks | Type-safe contract reads/writes/events | `frontend/components/scaffold-eth/hooks/` |
+| RainbowKit Wallet UI | Wallet connection + network switching | `frontend/components/wallet/` |
+| Provider Config | wagmi + RainbowKit + Base chain setup | `frontend/components/scaffold-eth/services/` |
+| Notification System | TX toast notifications | `frontend/components/scaffold-eth/utils/notification.tsx` |
+
+#### The Foundry Bridge
+SE2 expects Hardhat-generated `deployedContracts.ts`. We bridge this via a custom script:
+```
+Foundry artifacts (broadcast/*.json + out/*.json)
+  → scripts/foundry-bridge.js
+  → frontend/config/deployedContracts.ts (SE2-compatible format)
+```
+This is the ONLY adaptation needed. All SE2 hooks and components work unchanged once `deployedContracts.ts` exists.
+
+#### Directory Structure
+```
+frontend/
+├── app/
+│   ├── debug/          ← SE2 Debug Contracts (auto-generated UI)
+│   ├── agents/         ← Custom: Agent Discovery
+│   ├── trust/          ← Custom: Trust Score Explorer
+│   ├── audit/          ← Custom: Audit Trail
+│   ├── messages/       ← Custom: AXL Message Log
+│   └── page.tsx        ← Custom: Marketplace Home
+├── components/
+│   ├── scaffold-eth/   ← SE2: hooks (10), utils (7), services (3)
+│   ├── wallet/         ← SE2: RainbowKit UI (4)
+│   └── shared/         ← Custom: AgentTrust-specific components
+└── config/
+    ├── scaffold.config.ts          ← SE2: Base chain config
+    ├── deployedContracts.ts        ← Generated: Foundry bridge output
+    └── externalContracts.ts        ← Custom: ERC-8004, ENS, Uniswap addresses
+```
+
+### ethskills Integration
+
+[ethskills](https://github.com/austintgriffith/ethskills) is a **markdown knowledge base** (not a code library). AgentTrust uses it as:
+
+1. **Reference during development** — fetched to `docs/reference/ethskills/`
+2. **Verified contract addresses** — ERC-8004, Uniswap, USDC, WETH, ENS on Base
+3. **Commerce flow patterns** — 6-step agent commerce TypeScript implementation
+4. **Security checklists** — 22-item pre-deploy checklist for contracts
+5. **Subordinate context** — loaded into AI agent prompts during build sessions
+
+Zero npm dependencies. Zero code coupling. Pure knowledge extraction.
+
+### Deployment Architecture
+
+AgentTrust is **purely client-side** — no backend services needed.
+
+| Component | Execution |
+|-----------|----------|
+| Smart Contracts | Foundry → Base chain (on-chain) |
+| Gensyn AXL (P2P) | Browser WebSocket |
+| ENS Resolution | viem `getEnsAddress()` |
+| 0G Storage | JS SDK |
+| Uniswap v4 | viem contract calls |
+| KeeperHub MCP | Client-side SDK |
+| x402 Payments | Browser fetch + wallet |
+
+**Triple-layer deployment:**
+- **Vercel** (primary) — instant preview URLs, 5-min deploy
+- **Akash** (decentralized) — Docker container, $100 credits, impressive for judges
+- **IPFS + ENS** (permanent) — contenthash → IPFS CID, Ethereum ethos
+
+See `docs/DEPLOYMENT-STRATEGY.md` for full implementation details.

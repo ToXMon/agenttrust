@@ -34,12 +34,12 @@ interface ServiceResult {
  * 5. Submit output hash for verification
  */
 export class ProviderAgent {
-  private readonly config: ProviderConfig;
+  private readonly _config: ProviderConfig;
   private readonly ensName: string;
   private readonly completedServices: ServiceResult[];
 
   constructor(config: ProviderConfig) {
-    this.config = config;
+    this._config = config;
     this.ensName = config.ensName;
     this.completedServices = [];
   }

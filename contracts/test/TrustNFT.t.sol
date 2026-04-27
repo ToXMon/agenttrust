@@ -26,7 +26,7 @@ contract TrustNFTTest is Test {
     function test_MintTrustNFT() public {
         uint256 tokenId = s_trustNFT.mintTrustNFT(s_alice);
 
-        assertEq(tokenId, 0);
+        assertEq(tokenId, 1);
         assertEq(s_trustNFT.ownerOf(tokenId), s_alice);
 
         TrustNFT.TrustData memory data = s_trustNFT.getTrustData(tokenId);

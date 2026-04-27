@@ -20,10 +20,10 @@ export interface ENSConfig {
 }
 
 export class ENSClient {
-  private readonly config: ENSConfig;
+  private readonly _config: ENSConfig;
 
   constructor(config: ENSConfig) {
-    this.config = config;
+    this._config = config;
   }
 
   async resolveAgent(ensName: string): Promise<ENSAgentRecord | null> {
@@ -39,7 +39,7 @@ export class ENSClient {
     return txHash;
   }
 
-  async updateMetadata(ensName: string, key: string, value: string): Promise<string> {
+  async updateMetadata(ensName: string, key: string, _value: string): Promise<string> {
     console.log(`[ENS] Updating ${ensName} metadata: ${key}`);
     return "0x_placeholder";
   }

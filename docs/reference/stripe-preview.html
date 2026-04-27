@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stripe Design System Reference — AgentTrust</title>
+  <!--
+    Reference preview extracted from the Stripe design system (VoltAgent awesome-design-md collection).
+    This file serves as a visual token reference for the AgentTrust frontend.
+    All CSS variables, typography, shadows, and component patterns are documented here.
+  -->
+  <style>
+    /* ============================================
+       CSS Custom Properties — Design Tokens
+       ============================================ */
+    :root {
+      /* Primary Brand */
+      --purple: #533afd;
+      --purple-hover: #4434d4;
+      --purple-deep: #2e2b8c;
+      --purple-light: #b9b9f9;
+      --purple-mid: #665efd;
+
+      /* Neutral & Text */
+      --navy: #061b31;
+      --dark-navy: #0d253d;
+      --brand-dark: #1c1e54;
+      --white: #ffffff;
+      --slate: #64748d;
+      --dark-slate: #273951;
+
+      /* Semantic */
+      --ruby: #ea2261;
+      --magenta: #f96bee;
+      --magenta-light: #ffd7ef;
+      --success: #15be53;
+      --success-text: #108c3d;
+      --lemon: #9b6829;
+
+      /* Borders */
+      --border: #e5edf5;
+      --border-purple: #b9b9f9;
+      --border-soft: #d6d9fc;
+
+      /* Shadows */
+      --shadow-blue: rgba(50,50,93,0.25);
+      --shadow-dark-blue: rgba(3,3,39,0.25);
+      --shadow-black: rgba(0,0,0,0.1);
+      --shadow-ambient: rgba(23,23,23,0.08);
+      --shadow-soft: rgba(23,23,23,0.06);
+      --shadow-card: rgba(50,50,93,0.25) 0px 30px 45px -30px,
+                      rgba(0,0,0,0.1) 0px 18px 36px -18px;
+      --shadow-ambient-card: rgba(23,23,23,0.08) 0px 15px 35px 0px;
+      --shadow-subtle: rgba(23,23,23,0.06) 0px 3px 6px 0px;
+
+      /* Typography */
+      --font-primary: 'Sohne', 'SF Pro Display', -apple-system, system-ui, sans-serif;
+      --font-mono: 'Source Code Pro', SFMono-Regular, ui-monospace, Menlo, monospace;
+    }
+
+    /* ============================================
+       Base Reset & Typography
+       ============================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-primary);
+      font-size: 16px;
+      font-weight: 300;
+      line-height: 1.40;
+      color: var(--navy);
+      background: var(--white);
+      font-feature-settings: "ss01" 1;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1 {
+      font-size: 48px;
+      font-weight: 300;
+      line-height: 1.15;
+      letter-spacing: -0.96px;
+    }
+    h2 {
+      font-size: 32px;
+      font-weight: 300;
+      line-height: 1.10;
+      letter-spacing: -0.64px;
+    }
+    h3 {
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: -0.22px;
+    }
+
+    .font-mono {
+      font-family: var(--font-mono);
+    }
+
+    /* ============================================
+       Navigation
+       ============================================ */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      background: rgba(255,255,255,0.90);
+      border-bottom: 1px solid var(--border);
+      border-radius: 0 0 6px 6px;
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-weight: 500;
+      font-size: 18px;
+      color: var(--purple);
+    }
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--dark-slate);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .nav-links a:hover { color: var(--purple); }
+
+    /* ============================================
+       Hero Section
+       ============================================ */
+    .hero {
+      padding: 96px 64px 80px;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .hero h1 span { color: var(--purple); }
+    .hero p {
+      font-size: 18px;
+      line-height: 1.40;
+      color: var(--slate);
+      margin-top: 20px;
+    }
+
+    /* ============================================
+       Section
+       ============================================ */
+    .section {
+      padding: 64px 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-title {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .section-title h2 { margin-bottom: 12px; }
+    .section-title p {
+      color: var(--slate);
+      font-size: 18px;
+    }
+
+    /* ============================================
+       Card Grid
+       ============================================ */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .card {
+      background: var(--white);
+      border-radius: 6px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-subtle);
+      transition: box-shadow 0.25s ease, transform 0.25s ease;
+      cursor: pointer;
+    }
+    .card:hover {
+      box-shadow: var(--shadow-card);
+      transform: translateY(-2px);
+    }
+    .card h3 {
+      margin-bottom: 12px;
+      color: var(--navy);
+    }
+    .card p {
+      color: var(--slate);
+      font-size: 14px;
+      line-height: 1.50;
+    }
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: rgba(83,58,253,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      color: var(--purple);
+      font-size: 18px;
+    }
+
+    /* ============================================
+       Buttons
+       ============================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      font-weight: 400;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      border: none;
+      outline: none;
+    }
+    .btn-primary {
+      background: var(--purple);
+      color: var(--white);
+      padding: 10px 20px;
+    }
+    .btn-primary:hover { background: var(--purple-hover); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--purple);
+      padding: 10px 20px;
+      border: 1px solid var(--border-purple);
+    }
+    .btn-ghost:hover { background: rgba(83,58,253,0.04); }
+
+    .btn-info {
+      background: transparent;
+      color: #2874ad;
+      padding: 10px 20px;
+      border: 1px solid rgba(43,145,223,0.2);
+    }
+    .btn-info:hover { background: rgba(43,145,223,0.04); }
+
+    .btn-neutral {
+      background: transparent;
+      color: rgba(16,16,16,0.3);
+      padding: 8px 16px;
+      outline: 1px solid rgb(212,222,233);
+    }
+    .btn-neutral:hover { background: rgba(16,16,16,0.02); }
+
+    .btn-sm { padding: 8px 16px; font-size: 13px; }
+
+    /* ============================================
+       Badges
+       ============================================ */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-purple {
+      background: rgba(83,58,253,0.08);
+      color: var(--purple);
+    }
+    .badge-success {
+      background: rgba(21,190,83,0.08);
+      color: var(--success-text);
+    }
+    .badge-error {
+      background: rgba(234,34,97,0.08);
+      color: var(--ruby);
+    }
+    .badge-warning {
+      background: rgba(155,104,41,0.08);
+      color: var(--lemon);
+    }
+    .badge-muted {
+      background: rgba(100,116,141,0.08);
+      color: var(--slate);
+    }
+
+    /* ============================================
+       Forms
+       ============================================ */
+    .form-group { margin-bottom: 20px; }
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--dark-slate);
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--navy);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .form-input:focus {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 1px var(--purple);
+    }
+    .form-input.error {
+      border-color: var(--ruby);
+      box-shadow: 0 0 0 1px var(--ruby);
+    }
+    .form-input::placeholder { color: var(--slate); }
+
+    /* ============================================
+       Transaction Feed (Mono)
+       ============================================ */
+    .tx-feed {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      background: #fafbfc;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .tx-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tx-row:last-child { border-bottom: none; }
+    .tx-hash {
+      color: var(--purple);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      margin-right: 12px;
+    }
+    .tx-amount {
+      margin-left: auto;
+      font-weight: 500;
+    }
+    .tx-amount.positive { color: var(--success-text); }
+    .tx-amount.negative { color: var(--ruby); }
+
+    /* ============================================
+       Trust Score Bar
+       ============================================ */
+    .trust-bar {
+      width: 100%;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+    .trust-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+    .trust-low { background: var(--slate); width: 25%; }
+    .trust-medium { background: var(--purple-light); width: 55%; }
+    .trust-high { background: var(--purple); width: 85%; }
+    .trust-max { background: linear-gradient(90deg, var(--purple), var(--magenta)); width: 98%; }
+
+    /* ============================================
+       Token Swatches
+       ============================================ */
+    .swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+    }
+    .swatch {
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .swatch-color {
+      height: 60px;
+    }
+    .swatch-info {
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+    .swatch-name {
+      font-weight: 500;
+      color: var(--navy);
+      margin-bottom: 2px;
+    }
+    .swatch-hex {
+      font-family: var(--font-mono);
+      color: var(--slate);
+      font-size: 11px;
+    }
+
+    /* ============================================
+       Divider
+       ============================================ */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+
+    /* ============================================
+       Utility
+       ============================================ */
+    .flex-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mt-16 { margin-top: 16px; }
+    .mt-24 { margin-top: 24px; }
+    .mb-24 { margin-bottom: 24px; }
+    .text-center { text-align: center; }
+    .text-slate { color: var(--slate); }
+    .text-14 { font-size: 14px; }
+    .text-12 { font-size: 12px; }
+
+    /* ============================================
+       Responsive
+       ============================================ */
+    @media (max-width: 768px) {
+      .card-grid { grid-template-columns: 1fr; }
+      .hero { padding: 48px 20px; }
+      .hero h1 { font-size: 32px; }
+      .section { padding: 48px 20px; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-logo">AgentTrust</div>
+    <ul class="nav-links">
+      <li><a href="#colors">Colors</a></li>
+      <li><a href="#typography">Typography</a></li>
+      <li><a href="#buttons">Buttons</a></li>
+      <li><a href="#cards">Cards</a></li>
+      <li><a href="#forms">Forms</a></li>
+      <li><a href="#trust">Trust</a></li>
+      <li><a href="#transactions">Transactions</a></li>
+    </ul>
+    <div>
+      <button class="btn btn-primary btn-sm">Connect Wallet</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Trust-scored <span>agent commerce</span> on Base</h1>
+    <p>Design system reference derived from the Stripe visual language,
+       adapted for AgentTrust — verifiable agent-to-agent commerce protocol.</p>
+    <div class="flex-row mt-24" style="justify-content:center;">
+      <button class="btn btn-primary">Explore Agents</button>
+      <button class="btn btn-ghost">Read Docs</button>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Colors -->
+  <section class="section" id="colors">
+    <div class="section-title">
+      <h2>Color Palette</h2>
+      <p>Core brand, semantic, and neutral tokens</p>
+    </div>
+    <h3 class="mb-24">Primary Brand</h3>
+    <div class="swatch-grid mb-24">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#533afd;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Purple</div>
+          <div class="swatch-hex">#533afd</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#4434d4;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Purple Hover</div>
+          <div class="swatch-hex">#4434d4</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#2e2b8c;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Purple Deep</div>
+          <div class="swatch-hex">#2e2b8c</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#b9b9f9;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Purple Light</div>
+          <div class="swatch-hex">#b9b9f9</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#665efd;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Purple Mid</div>
+          <div class="swatch-hex">#665efd</div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="mb-24">Semantic</h3>
+    <div class="swatch-grid mb-24">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#ea2261;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Ruby (Error)</div>
+          <div class="swatch-hex">#ea2261</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#15be53;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Success</div>
+          <div class="swatch-hex">#15be53</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#9b6829;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Lemon (Warning)</div>
+          <div class="swatch-hex">#9b6829</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#f96bee;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Magenta</div>
+          <div class="swatch-hex">#f96bee</div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="mb-24">Neutral &amp; Text</h3>
+    <div class="swatch-grid mb-24">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#061b31;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Navy (Text)</div>
+          <div class="swatch-hex">#061b31</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#273951;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Dark Slate</div>
+          <div class="swatch-hex">#273951</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#64748d;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Slate</div>
+          <div class="swatch-hex">#64748d</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#e5edf5; border-bottom:1px solid #d6d9fc;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Border</div>
+          <div class="swatch-hex">#e5edf5</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Typography -->
+  <section class="section" id="typography">
+    <div class="section-title">
+      <h2>Typography</h2>
+      <p>Scale, weights, and font families</p>
+    </div>
+    <div style="max-width:700px;">
+      <h1 style="margin-bottom:24px;">Heading 1 — 48px / 300 / -0.96px tracking</h1>
+      <h2 style="margin-bottom:24px;">Heading 2 — 32px / 300 / -0.64px tracking</h2>
+      <h3 style="margin-bottom:24px;">Heading 3 — 22px / 300 / -0.22px tracking</h3>
+      <p style="font-size:18px; margin-bottom:24px;">
+        Body Large — 18px / 300 / 1.40 line-height. Used for hero descriptions, section intros, and feature summaries.
+      </p>
+      <p style="margin-bottom:24px;">
+        Body Default — 16px / 300 / 1.40 line-height. The standard paragraph text across the entire interface.
+      </p>
+      <p class="font-mono" style="font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:24px;">
+        MONO LABEL — 12PX / 500 / UPPERCASE / 0.5PX TRACKING
+      </p>
+      <p style="font-size:14px; font-weight:400; color:var(--dark-slate);">
+        Nav / Label — 14px / 400 — used for navigation items, form labels, secondary actions.
+      </p>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Buttons -->
+  <section class="section" id="buttons">
+    <div class="section-title">
+      <h2>Buttons</h2>
+      <p>Primary, ghost, info, and neutral variants</p>
+    </div>
+    <div class="flex-row" style="flex-wrap:wrap; gap:16px;">
+      <button class="btn btn-primary">Primary Button</button>
+      <button class="btn btn-ghost">Ghost Button</button>
+      <button class="btn btn-info">Info Button</button>
+      <button class="btn btn-neutral">Neutral Button</button>
+    </div>
+    <div class="flex-row mt-24" style="flex-wrap:wrap; gap:16px;">
+      <button class="btn btn-primary btn-sm">Primary SM</button>
+      <button class="btn btn-ghost btn-sm">Ghost SM</button>
+      <button class="btn btn-info btn-sm">Info SM</button>
+      <button class="btn btn-neutral btn-sm">Neutral SM</button>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Cards -->
+  <section class="section" id="cards">
+    <div class="section-title">
+      <h2>Cards</h2>
+      <p>Elevation pattern with hover state</p>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">🤖</div>
+        <h3>Agent Discovery</h3>
+        <p>Find trusted agents via ENS identity. Browse capabilities, trust scores, and service history.</p>
+        <div class="mt-16">
+          <span class="badge badge-purple">ERC-7857</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🛡️</div>
+        <h3>Trust Verification</h3>
+        <p>Verify agent capabilities through on-chain iNFTs with cryptographic proof of competency.</p>
+        <div class="mt-16">
+          <span class="badge badge-success">Verified</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <h3>Safe Execution</h3>
+        <p>Reliable task execution via KeeperHub with retry logic and full audit trail on-chain.</p>
+        <div class="mt-16">
+          <span class="badge badge-warning">Pending</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Forms -->
+  <section class="section" id="forms">
+    <div class="section-title">
+      <h2>Forms</h2>
+      <p>Input states — default, focus, error</p>
+    </div>
+    <div style="max-width:480px;">
+      <div class="form-group">
+        <label class="form-label">Agent ENS Name</label>
+        <input class="form-input" type="text" placeholder="e.g. agent.alice.eth">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ENS Name (Focused)</label>
+        <input class="form-input" type="text" value="agent.bob.eth" style="border-color:var(--purple); box-shadow:0 0 0 1px var(--purple);">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ENS Name (Error)</label>
+        <input class="form-input error" type="text" value="invalid-name">
+        <p style="color:var(--ruby); font-size:13px; margin-top:4px;">Please enter a valid ENS name</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Trust Scores -->
+  <section class="section" id="trust">
+    <div class="section-title">
+      <h2>Trust Scores</h2>
+      <p>Purple gradient scale from low to maximum trust</p>
+    </div>
+    <div style="max-width:480px;">
+      <div style="margin-bottom:20px;">
+        <div class="flex-row" style="justify-content:space-between;">
+          <span class="text-14">Low Trust</span>
+          <span class="font-mono text-12" style="color:var(--slate);">25 / 100</span>
+        </div>
+        <div class="trust-bar"><div class="trust-fill trust-low"></div></div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <div class="flex-row" style="justify-content:space-between;">
+          <span class="text-14">Medium Trust</span>
+          <span class="font-mono text-12" style="color:var(--purple-light);">55 / 100</span>
+        </div>
+        <div class="trust-bar"><div class="trust-fill trust-medium"></div></div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <div class="flex-row" style="justify-content:space-between;">
+          <span class="text-14">High Trust</span>
+          <span class="font-mono text-12" style="color:var(--purple);">85 / 100</span>
+        </div>
+        <div class="trust-bar"><div class="trust-fill trust-high"></div></div>
+      </div>
+      <div>
+        <div class="flex-row" style="justify-content:space-between;">
+          <span class="text-14">Maximum Trust</span>
+          <span class="font-mono text-12" style="color:var(--magenta);">98 / 100</span>
+        </div>
+        <div class="trust-bar"><div class="trust-fill trust-max"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Transaction Feed -->
+  <section class="section" id="transactions">
+    <div class="section-title">
+      <h2>Transaction Feed</h2>
+      <p>Mono font with semantic colors for on-chain events</p>
+    </div>
+    <div class="tx-feed" style="max-width:600px;">
+      <div class="tx-row">
+        <span class="badge badge-success" style="margin-right:12px;">Success</span>
+        <span class="tx-hash">0x3a7f…c4e2</span>
+        <span class="text-slate text-12">agent.alice → agent.bob</span>
+        <span class="tx-amount positive">+2.5 ETH</span>
+      </div>
+      <div class="tx-row">
+        <span class="badge badge-error" style="margin-right:12px;">Failed</span>
+        <span class="tx-hash">0x8b2d…1f9a</span>
+        <span class="text-slate text-12">agent.carol → agent.dave</span>
+        <span class="tx-amount negative">-0.3 ETH</span>
+      </div>
+      <div class="tx-row">
+        <span class="badge badge-purple" style="margin-right:12px;">Pending</span>
+        <span class="tx-hash">0xf1c6…7b3d</span>
+        <span class="text-slate text-12">agent.eve → agent.frank</span>
+        <span class="tx-amount" style="color:var(--purple);">1.0 ETH</span>
+      </div>
+      <div class="tx-row">
+        <span class="badge badge-muted" style="margin-right:12px;">Expired</span>
+        <span class="tx-hash">0x2d9e…a5c8</span>
+        <span class="text-slate text-12">agent.grace → agent.heidi</span>
+        <span class="tx-amount" style="color:var(--slate);">5.0 ETH</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- Badges Summary -->
+  <section class="section">
+    <div class="section-title">
+      <h2>Badges</h2>
+      <p>Semantic status indicators</p>
+    </div>
+    <div class="flex-row" style="flex-wrap:wrap; gap:8px;">
+      <span class="badge badge-purple">ERC-7857</span>
+      <span class="badge badge-success">Verified</span>
+      <span class="badge badge-success">On Base</span>
+      <span class="badge badge-error">Revoked</span>
+      <span class="badge badge-warning">Pending</span>
+      <span class="badge badge-muted">Expired</span>
+      <span class="badge badge-purple">AXL P2P</span>
+      <span class="badge badge-purple">ENS</span>
+    </div>
+  </section>
+
+  <div style="padding:48px; text-align:center; color:var(--slate); font-size:13px;">
+    AgentTrust Design System Reference — Derived from Stripe visual language<br>
+    ETHGlobal Open Agents Hackathon 2026
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,23 @@
+[
+  {
+    "timestamp": "2026-04-27T01:23:31.249730+00:00",
+    "category": "test_result",
+    "description": "Fixed all 9 failing AgentTrust Foundry tests. All 24/24 tests now pass.",
+    "details": {
+      "fixes_applied": [
+        "AgentRegistry.sol: s_nextTokenId = 1 (was 0), totalRegistered = s_nextTokenId - 1",
+        "TrustNFT.sol: s_nextTokenId = 1 (was 0), totalMinted = s_nextTokenId - 1",
+        "TrustNFT.sol: _calculateNewScore targetScore = successRate (was 50 + successRate*50/100)",
+        "AgentRegistry.t.sol: assertEq(tokenId, 1) and assertEq(found, 1) (were 0)",
+        "TrustNFT.t.sol: assertEq(tokenId, 1) (was 0)"
+      ],
+      "root_causes": [
+        "tokenId=0 sentinel bug: mappings return 0 for 'not found' but first token was ID 0",
+        "Score formula could not produce target < 50, so disputed completions kept score at 50"
+      ],
+      "test_results": "24 passed, 0 failed across 3 suites"
+    },
+    "actor": "agent",
+    "severity": "info"
+  }
+]

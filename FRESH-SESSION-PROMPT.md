@@ -69,4 +69,46 @@ All other decisions are made autonomously.
 
 ---
 
+## Integration Guide Index
+
+Before executing any workpack, check if it references these integration guides:
+
+| Guide | Path | Used By |
+|-------|------|----------|
+| SE2 Cherry-Pick | `docs/SE2-INTEGRATION-GUIDE.md` | Workpack 0, Workpack 9 |
+| ethskills Reference | `docs/ETHSKILLS-REFERENCE.md` | Workpack 0, Workpacks 1-3 (contract patterns) |
+| Deployment Strategy | `docs/DEPLOYMENT-STRATEGY.md` | Workpack 11 |
+
+### Integration Guide Loading Rules
+
+1. **Workpack 0** — Must read BOTH `docs/SE2-INTEGRATION-GUIDE.md` AND `docs/ETHSKILLS-REFERENCE.md` before starting
+2. **Workpacks 1-3** (Contracts) — Load `docs/ETHSKILLS-REFERENCE.md` for security checklists and testing patterns. Also load `docs/reference/ethskills/security.md` and `docs/reference/ethskills/testing.md` if fetched
+3. **Workpack 4** (Deploy) — After deployment, run `scripts/foundry-bridge.js` to regenerate `frontend/config/deployedContracts.ts`
+4. **Workpack 9** (Frontend) — Read `docs/SE2-INTEGRATION-GUIDE.md` for hook usage patterns and component locations
+5. **Workpack 11** (Deploy) — Read `docs/DEPLOYMENT-STRATEGY.md` for Dockerfile, SDL, and ENS setup
+
+### ethskills in Subordinate Prompts
+
+When delegating contract work (Workpacks 1-3), include in the subordinate message:
+```
+## Reference Materials
+Read these files before starting:
+- docs/reference/ethskills/standards.md — ERC-8004 commerce flow, x402 patterns
+- docs/reference/ethskills/security.md — 22-item pre-deploy checklist
+- docs/reference/ethskills/testing.md — Foundry fuzz/invariant test templates
+- docs/reference/ethskills/addresses.md — Verified Base chain addresses
+```
+
+### SE2 Hook Quick Reference
+
+When building frontend components (Workpack 9), these hooks are available:
+- `useScaffoldRead` — Read contract state (replaces raw `useReadContract`)
+- `useScaffoldWrite` — Write to contracts (replaces raw `useWriteContract`)
+- `useScaffoldEventHistory` — Query historical events
+- `useWatchContractEvent` — Subscribe to real-time events
+- `useTransactor` — TX wrapper with notifications
+- `useDeployedContractInfo` — Get ABI + address for a contract
+
+---
+
 *This file is read at the start of every new session. Keep it concise.*

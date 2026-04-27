@@ -10,12 +10,12 @@ import type { AgentConfig, ServiceProposal, AgreementResponse } from "./types.js
  * 4. Verify output and release payment
  */
 export class RequesterAgent {
-  private readonly config: AgentConfig;
+  private readonly _config: AgentConfig;
   private readonly ensName: string;
   private readonly trustThreshold: number;
 
   constructor(config: AgentConfig) {
-    this.config = config;
+    this._config = config;
     this.ensName = config.ensName;
     this.trustThreshold = config.trustThreshold ?? 60;
   }
@@ -78,28 +78,4 @@ export class RequesterAgent {
     );
     return agreementId;
   }
-}
-
-export interface AgentConfig {
-  ensName: string;
-  privateKey: string;
-  rpcUrl: string;
-  chainId: number;
-  trustThreshold?: number;
-  axlNodeUrl?: string;
-}
-
-export interface ServiceProposal {
-  serviceType: string;
-  providerAddress: string;
-  amount: string;
-  token: string;
-  deadline: number;
-  description: string;
-}
-
-export interface AgreementResponse {
-  accepted: boolean;
-  reason: string;
-  agreementId: string | null;
 }

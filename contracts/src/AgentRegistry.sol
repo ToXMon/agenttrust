@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import {ERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Ownable2Step} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol";
 
 /**
@@ -25,7 +26,7 @@ contract AgentRegistry is ERC721, Ownable2Step {
                               STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    uint256 private s_nextTokenId;
+    uint256 private s_nextTokenId = 1;
     mapping(uint256 tokenId => AgentMetadata) private s_agents;
     mapping(address owner => uint256 tokenId) private s_addressToTokenId;
     mapping(string ensName => uint256 tokenId) private s_ensToTokenId;
@@ -144,6 +145,6 @@ contract AgentRegistry is ERC721, Ownable2Step {
     }
 
     function totalRegistered() external view returns (uint256 total) {
-        total = s_nextTokenId;
+        total = s_nextTokenId - 1;
     }
 }
