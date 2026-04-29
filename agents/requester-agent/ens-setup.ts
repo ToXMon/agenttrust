@@ -2,13 +2,13 @@
  * RequesterENSSetup — live ENS/Basenames registration for the requester agent.
  *
  * Uses the ENSClient from sdk/ens.ts for all on-chain operations.
- * Registers agent metadata as Basenames text records on Base Sepolia.
+ * Registers agent metadata as Basenames text records on Base Mainnet.
  */
 
 import type { Hex } from "viem";
 import {
   ENSClient,
-  BASE_SEPOLIA_ENS_CONFIG,
+  BASE_MAINNET_ENS_CONFIG,
   type ENSAgentRecord,
 } from "../../sdk/ens.js";
 
@@ -30,7 +30,7 @@ export class RequesterENSSetup {
   constructor(config: RequesterENSConfig) {
     this.config = config;
     this.client = new ENSClient({
-      ...BASE_SEPOLIA_ENS_CONFIG,
+      ...BASE_MAINNET_ENS_CONFIG,
       rpcUrl: config.rpcUrl,
     });
     this.client.initWallet(config.privateKey);

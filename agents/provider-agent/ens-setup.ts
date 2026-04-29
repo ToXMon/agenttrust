@@ -8,7 +8,7 @@
 import type { Hex } from "viem";
 import {
   ENSClient,
-  BASE_SEPOLIA_ENS_CONFIG,
+  BASE_MAINNET_ENS_CONFIG,
   type ENSAgentRecord,
 } from "../../sdk/ens.js";
 
@@ -30,7 +30,7 @@ export class ProviderENSSetup {
   constructor(config: ProviderENSConfig) {
     this.config = config;
     this.client = new ENSClient({
-      ...BASE_SEPOLIA_ENS_CONFIG,
+      ...BASE_MAINNET_ENS_CONFIG,
       rpcUrl: config.rpcUrl,
     });
     this.client.initWallet(config.privateKey);
