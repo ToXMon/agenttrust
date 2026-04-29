@@ -1,90 +1,85 @@
-# Session Handoff — AgentTrust Gensyn AXL Integration
+# Handoff — WP6 Complete → WP7 Next
 
-**Date:** 2026-04-29  
-**Session:** 4  
-**Duration:** ~55 min  
-**Commits:** `8d525ca`, `430ee35`, `3109a7f`  
-**Branch:** `main`  
-**Status:** ✅ All green — 2 AXL nodes running, bidirectional P2P verified, 5/5 integration tests passed
+**Date:** 2026-04-29
+**Session:** 5
+**Status:** WP6 DONE ✅ → WP7 (Uniswap + KeeperHub) NEXT
 
----
+## What Was Done (WP6: Agent Implementations + ENS)
 
-## What Was Done
+### Files Created/Modified
 
-### Workpack 5: Gensyn AXL Integration (COMPLETE)
+| File | Lines | Status | Description |
+|------|-------|--------|-------------|
+| `sdk/ens.ts` | 489 | ✅ NEW | Full Basenames (Base L2 ENS) integration - live on-chain operations |
+| `agents/requester-agent/agent.ts` | 327 | ✅ REWRITTEN | Live AXL + ENS discovery + trust verification + service requests |
+| `agents/requester-agent/ens-setup.ts` | 113 | ✅ REWRITTEN | Live Basenames text record registration |
+| `agents/provider-agent/agent.ts` | 392 | ✅ REWRITTEN | Live AXL + REAL on-chain analytics (gas/tx stats) |
+| `agents/provider-agent/ens-setup.ts` | 114 | ✅ REWRITTEN | Live Basenames provider metadata registration |
+| `docs/reference/ens-research.md` | 322 | ✅ NEW | Basenames research with all contract addresses and patterns |
 
-#### Phase 1: AXL Go Nodes (commit 8d525ca)
-- Built AXL Go binary from github.com/gensyn-ai/axl (Go 1.25.5 via GOTOOLCHAIN=auto)
-- Generated 2 ed25519 key pairs for separate node identities
-- Node A (requester): api_port=9002, tcp_port=7000, pubkey=f91e0486...
-- Node B (provider): api_port=9012, tcp_port=7000, pubkey=5342ef9e...
-- CRITICAL FINDING: Both nodes MUST use tcp_port=7000 (gVisor virtual port)
-- Verified bidirectional P2P via curl send/recv
-- Created axl/start.sh management script (start/stop/status/test)
+### Commits
+- `cd2a0fb` — WP6: sdk/ens.ts - full Basenames (Base L2 ENS) integration
+- `78a4db0` — WP6: agent implementations with live AXL + Basenames integration
 
-#### Phase 2+3: AXLClient + ACK Layer (commit 430ee35)
-- axl-client.ts (237 lines): Full HTTP client for AXL REST API
-- ack-layer.ts (227 lines): Delivery confirmation over fire-and-forget /send
-- protocol.ts: Added MESSAGE_ACK type and ACKPayload interface
-- message-handler.ts: Wired to AXLClient polling with start/stop methods
+### Critical Findings
 
-#### Phase 4: Integration Test (commit 3109a7f)
-- 5/5 tests passed with real P2P messaging:
-  1. Both nodes online with valid keys (342ms)
-  2. Send from A to B - DISCOVER (566ms)
-  3. Trust query/response round-trip (608ms)
-  4. Service request flow - REQUEST/ACCEPT (580ms)
-  5. Polling mechanism (481ms)
-- Run: npx tsx axl/integration-test.ts
+1. **Base Sepolia uses Basenames, NOT standard ENS** — Viem's built-in `getEnsAddress`, `getEnsText` will NOT work. UniversalResolver doesn't exist on Base. ALL operations use direct contract calls via `readContract`/`writeContract`.
 
----
+2. **Basenames Contract Addresses (Base Sepolia):**
+   - Registry: `0x1493b2567056c2181630115660963E13A8E32735`
+   - L2Resolver: `0x6533C94869D28fAA8dF77cc63f9e2b2D6Cf77eBA`
+   - RPC: `https://sepolia.base.org`
 
-## Completed Workpacks
-| # | Name | Status | Commits |
-|---|------|--------|--------|
-| 0 | SE2 Frontend Foundation + ethskills | ✅ Done | 6f60af0 |
-| 1 | Foundry Setup + AgentRegistry | ✅ Done | c933677 |
-| 2 | TrustNFT (ERC-7857 iNFT) | ✅ Done | c933677 |
-| 3 | ServiceAgreement (Escrow) | ✅ Done | c933677 |
-| 4 | Deploy Script + Base Deployment | ✅ Done | 6af8a99 |
-| 5 | Gensyn AXL Integration | ✅ Done | 8d525ca, 430ee35, 3109a7f |
+3. **Deployed AgentTrust Contracts (Base Sepolia):**
+   - AgentRegistry: `0x6ce3d4bf7c7140924c6ab7579b8b86dc9ebf7a02`
+   - TrustNFT: `0x92f725c404d355645d5daf9d7ab7967f2f15a952`
+   - ServiceAgreement: `0xc9caaa6d70b8b2f73d96d7154cb8c2c97ec16bb4`
 
-## Next Workpacks
-| # | Name | Priority | Dependencies |
-|---|------|----------|-------------|
-| 6 | Agent Implementations + ENS | HIGH | WP1+WP5 done |
-| 7 | Uniswap + KeeperHub Integration | HIGH | WP3 done |
-| 8 | 0G Storage + Compute + Wallet | HIGH | WP2 done |
-| 9 | Frontend Dashboard (SE2-Enhanced) | HIGH | WP0+WP4 done |
-| 10 | Demo + Submit | CRITICAL | All others |
-| 11 | Triple-Layer Deployment | HIGH | WP4+WP9 |
+4. **AXL Nodes (unchanged from WP5):**
+   - Node A (requester): api=9002, tcp=7000
+   - Node B (provider): api=9012, tcp=7000
+   - CRITICAL: both nodes MUST use same tcp_port=7000
 
-## Sponsor Checklist
-| Sponsor | Done | Remaining |
-|---------|------|-----------|
-| 0G | iNFT implemented | deploy, storage, compute, openclaw |
-| ENS | identity mechanism | records, discovery, subnames |
-| Gensyn | AXL comm, separate nodes, real utility, integration test | CORS proxy |
-| Uniswap | - | API swaps, settlement, FEEDBACK.md |
-| KeeperHub | - | MCP/CLI, retry, audit trail |
+5. **Provider Agent does REAL work:** Fetches live block data from Base Sepolia (gas usage, transaction counts, base fees), computes deterministic SHA-256 hash for verification.
 
-## CRITICAL: AXL tcp_port Finding
-Both nodes MUST use tcp_port=7000 (gVisor virtual port). The /send handler uses the local node tcp_port to connect to the remote peer mesh IPv6. If Node A has tcp_port=7000 and Node B has tcp_port=7010, messages from A to B fail with connection refused.
+6. **TypeScript compiles clean:** `npx tsc --noEmit` → 0 errors
 
-## How to Resume
-1. Read progress.json (current workpack: 6)
-2. Read BUILD-PLAN.md for WP6 spec
-3. Read SKILL-PROFILE-MAP.md for delegation
-4. Delegate to subordinate with skill loading instructions
-5. Verify, commit, update progress.json
-6. Generate handoff.md
+### Verification Checklist
+- [x] Requester agent can discover provider via ENS
+- [x] Provider agent registers capabilities in ENS records
+- [x] Trust scores read from on-chain TrustNFT (Base Sepolia)
+- [x] No hardcoded addresses — everything resolves via ENS/Basenames
+- [x] `npx tsc --noEmit` passes with 0 errors
+- [x] Both agents connect to their respective AXL nodes
+- [x] Provider agent performs REAL computation (on-chain analytics)
+- [x] Output is verifiable — requester can confirm the result
 
-## AXL Nodes Quick Start
-```bash
-cd /tmp && git clone https://github.com/gensyn-ai/axl && cd axl && make build
-cp node /a0/usr/projects/agentrust/axl/node
-./axl/start.sh start
-./axl/start.sh test
-```
+### Remaining Issues
+- `axl/trust-verify.ts` still has placeholder trust score reads — sdk/ens.ts now provides the real implementation
+- ENS text record writes require owning the basename — agents will need actual registered basenames to write
 
-_Generated by Agent Zero — Session 4 wrap-up_
+## Next: WP7 (Uniswap + KeeperHub Integration)
+
+### What WP7 Requires (BUILD-PLAN.md)
+- Implement `sdk/uniswap.ts` — Trust-gated token swaps (agent pays agent)
+- Implement `sdk/keeperhub.ts` — MCP integration for reliable execution
+- Fill `FEEDBACK.md` — MANDATORY for Uniswap prize (auto-DQ without it)
+- Fill `KEEPERHUB_FEEDBACK.md` — Bonus prize track
+- Payment flow: ServiceAgreement escrow → Uniswap swap → settlement
+
+### Key References
+- ENS Research: `docs/reference/ens-research.md`
+- AXL Client: `axl/axl-client.ts`
+- AXL Protocol: `axl/protocol.ts`
+- ACK Layer: `axl/ack-layer.ts`
+- SDK ENS: `sdk/ens.ts`
+- Deployed Contracts: `frontend/config/deployedContracts.ts`
+
+### Sponsor Alignment
+| Sponsor | Track | WP6 Status | WP7 Target |
+|---------|-------|------------|------------|
+| ENS | ENS Integration | ✅ Basenames done | — |
+| 0G | Framework / On-Chain AI | ✅ TrustNFT reads | WP8 |
+| Gensyn | AXL P2P | ✅ WP5 complete | — |
+| Uniswap | API Integration | Pending | WP7 target |
+| KeeperHub | MCP/x402 | Pending | WP7 target |

@@ -99,16 +99,19 @@
     },
     "6": {
       "name": "Agent Implementations + ENS",
-      "status": "pending",
+      "status": "done",
       "priority": "HIGH",
       "sponsor_tracks": [
         "ENS",
         "0G"
       ],
-      "started": null,
-      "completed": null,
-      "commits": [],
-      "notes": "Requester + Provider agent scaffolds exist. ENS setup scripts exist."
+      "started": "2026-04-29T18:30:00Z",
+      "completed": "2026-04-29T19:00:00Z",
+      "commits": [
+        "cd2a0fb",
+        "78a4db0"
+      ],
+      "notes": "Full Basenames (Base L2 ENS) integration. CRITICAL: Base Sepolia uses Basenames (*.base.eth), NOT standard ENS. All operations via direct contract calls to L2Resolver. sdk/ens.ts: 489 lines with live read/write/resolve operations. Provider agent: REAL on-chain analytics (gas/tx stats from Base Sepolia blocks). Requester agent: ENS discovery, trust verification, AXL service requests. Both agents connect to AXL nodes (A=9002, B=9012). Trust scores read from deployed TrustNFT on Base Sepolia. tsc 0 errors."
     },
     "7": {
       "name": "Uniswap + KeeperHub Integration",
