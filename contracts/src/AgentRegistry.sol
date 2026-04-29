@@ -4,15 +4,17 @@ pragma solidity 0.8.28;
 import {ERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Ownable2Step} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol";
+import {ReentrancyGuardTransient} from "openzeppelin-contracts/contracts/utils/ReentrancyGuardTransient.sol";
 
 /**
  * @title AgentRegistry
  * @notice Registers AI agents with ENS names and identity metadata as NFTs
+ * @dev Uses ReentrancyGuardTransient for gas-efficient reentrancy protection.
  * @custom:security-contact security@agenttrust.xyz
  */
-contract AgentRegistry is ERC721, Ownable2Step {
+contract AgentRegistry is ERC721, Ownable2Step, ReentrancyGuardTransient {
     /*//////////////////////////////////////////////////////////////
-                                 TYPES
+                                TYPES
     //////////////////////////////////////////////////////////////*/
 
     struct AgentMetadata {
@@ -23,7 +25,7 @@ contract AgentRegistry is ERC721, Ownable2Step {
     }
 
     /*//////////////////////////////////////////////////////////////
-                              STATE VARIABLES
+                           STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
     uint256 private s_nextTokenId = 1;
@@ -32,7 +34,7 @@ contract AgentRegistry is ERC721, Ownable2Step {
     mapping(string ensName => uint256 tokenId) private s_ensToTokenId;
 
     /*//////////////////////////////////////////////////////////////
-                                EVENTS
+                             EVENTS
     //////////////////////////////////////////////////////////////*/
 
     event AgentRegistered(uint256 indexed tokenId, address indexed agent, string ensName);
@@ -41,7 +43,7 @@ contract AgentRegistry is ERC721, Ownable2Step {
     event CapabilitiesUpdated(uint256 indexed tokenId, bytes32 capabilitiesHash);
 
     /*//////////////////////////////////////////////////////////////
-                                ERRORS
+                             ERRORS
     //////////////////////////////////////////////////////////////*/
 
     error AgentRegistry__AlreadyRegistered();
@@ -49,21 +51,23 @@ contract AgentRegistry is ERC721, Ownable2Step {
     error AgentRegistry__NotRegistered();
     error AgentRegistry__NotTokenOwner();
     error AgentRegistry__AgentInactive();
+    error AgentRegistry__EmptyENSName();
 
     /*//////////////////////////////////////////////////////////////
-                              CONSTRUCTOR
+                           CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor() ERC721("AgentTrust Identity", "ATID") Ownable(msg.sender) {}
+    constructor() ERC721("AgentTrust Identity", "ATID") Ownable(msg.sender) ReentrancyGuardTransient() {}
 
     /*//////////////////////////////////////////////////////////////
-                          EXTERNAL STATE-CHANGING
+                       EXTERNAL STATE-CHANGING
     //////////////////////////////////////////////////////////////*/
 
     function registerAgent(
         string calldata ensName,
         bytes32 capabilitiesHash
-    ) external returns (uint256 tokenId) {
+    ) external nonReentrant returns (uint256 tokenId) {
+        if (bytes(ensName).length == 0) revert AgentRegistry__EmptyENSName();
         if (s_addressToTokenId[msg.sender] != 0) {
             revert AgentRegistry__AlreadyRegistered();
         }
@@ -88,7 +92,7 @@ contract AgentRegistry is ERC721, Ownable2Step {
         emit AgentRegistered(tokenId, msg.sender, ensName);
     }
 
-    function deactivateAgent(uint256 tokenId) external {
+    function deactivateAgent(uint256 tokenId) external nonReentrant {
         if (ownerOf(tokenId) != msg.sender) {
             revert AgentRegistry__NotTokenOwner();
         }
@@ -113,7 +117,7 @@ contract AgentRegistry is ERC721, Ownable2Step {
     }
 
     /*//////////////////////////////////////////////////////////////
-                          EXTERNAL VIEW FUNCTIONS
+                       EXTERNAL VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     function getAgent(uint256 tokenId) external view returns (AgentMetadata memory agent) {

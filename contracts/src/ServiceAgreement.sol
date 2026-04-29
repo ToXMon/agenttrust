@@ -80,9 +80,10 @@ contract ServiceAgreement is ReentrancyGuardTransient, Ownable2Step {
     error ServiceAgreement__NotParticipant();
     error ServiceAgreement__InvalidStatus();
     error ServiceAgreement__TrustBelowThreshold();
-    error ServiceAgreement__DeadlinePassed();
     error ServiceAgreement__ZeroAmount();
     error ServiceAgreement__SameAgent();
+    error ServiceAgreement__ZeroAddress();
+    error ServiceAgreement__DeadlinePassed();
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -103,6 +104,7 @@ contract ServiceAgreement is ReentrancyGuardTransient, Ownable2Step {
         bytes32 serviceHash
     ) external nonReentrant returns (uint256 agreementId) {
         if (amount == 0) revert ServiceAgreement__ZeroAmount();
+        if (provider == address(0)) revert ServiceAgreement__ZeroAddress();
         if (msg.sender == provider) revert ServiceAgreement__SameAgent();
         if (deadline <= block.timestamp) revert ServiceAgreement__DeadlinePassed();
 

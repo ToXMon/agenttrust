@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {ERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Ownable2Step} from "openzeppelin-contracts/contracts/access/Ownable2Step.sol";
+import {ReentrancyGuardTransient} from "openzeppelin-contracts/contracts/utils/ReentrancyGuardTransient.sol";
 
 /**
  * @title TrustNFT
@@ -11,7 +12,7 @@ import {Ownable2Step} from "openzeppelin-contracts/contracts/access/Ownable2Step
  * @dev Tokens are non-transferable — bound to the agent that earned them
  * @custom:security-contact security@agenttrust.xyz
  */
-contract TrustNFT is ERC721, Ownable2Step {
+contract TrustNFT is ERC721, Ownable2Step, ReentrancyGuardTransient {
     /*//////////////////////////////////////////////////////////////
                                  TYPES
     //////////////////////////////////////////////////////////////*/
@@ -56,7 +57,7 @@ contract TrustNFT is ERC721, Ownable2Step {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor() ERC721("AgentTrust Score", "ATS") Ownable(msg.sender) {}
+    constructor() ERC721("AgentTrust Score", "ATS") Ownable(msg.sender) ReentrancyGuardTransient() {}
 
     /*//////////////////////////////////////////////////////////////
                           MODIFIERS
@@ -73,7 +74,7 @@ contract TrustNFT is ERC721, Ownable2Step {
                           EXTERNAL STATE-CHANGING
     //////////////////////////////////////////////////////////////*/
 
-    function mintTrustNFT(address agent) external returns (uint256 tokenId) {
+    function mintTrustNFT(address agent) external nonReentrant returns (uint256 tokenId) {
         if (s_agentToTokenId[agent] != 0) {
             revert TrustNFT__AlreadyMinted();
         }
