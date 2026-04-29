@@ -1,51 +1,42 @@
-# Session Handoff — AgentTrust Frontend Foundation
+# Session Handoff — AgentTrust Smart Contract Deployment
 
-**Date:** 2026-04-27  
-**Session:** 2  
-**Duration:** ~90 min  
-**Commit:** `6f60af0`  
+**Date:** 2026-04-29  
+**Session:** 3  
+**Duration:** ~75 min  
+**Commit:** `6af8a99`  
 **Branch:** `main`  
-**Status:** ✅ All green — npm run dev clean, build passes, pushed
+**Status:** ✅ All green — contracts deployed, verified, frontend type-safe, repo sanitized
 
 ---
 
 ## What Was Done
 
-### Workpack 0: SE2 Frontend Foundation + ethskills Setup
-- Initialized **Next.js 14** with TypeScript + TailwindCSS in `frontend/`
-- Cherry-picked **30+ Scaffold-ETH 2 components** from SE2 reference repo
-- Created **Debug Contracts page** at `/debug` (auto-generated CRUD UI for contracts)
-- Built **hero landing page** with agent discovery cards and trust score bars
-- Created **root layout** with Web3 providers (Wagmi + RainbowKit + React Query)
-- Built **frosted glass navigation** with wallet connect button
-- Configured **tailwind.config.ts** with exact DESIGN.md Stripe tokens
-- Created **externalContracts.ts** with 7 verified Base chain addresses
-- Created **Foundry bridge script** (`scripts/foundry-bridge.js`) for deployedContracts.ts generation
-- Fetched **6 ethskills reference docs** (95KB total) to `docs/reference/ethskills/`
+### Workpack 4: Deploy Script + Base Deployment
 
-### Files Delivered (49 source files)
+- **Deployed 3 contracts** to Base Sepolia testnet (chain 84532, block 40853462)
+- **Source-verified** all 3 contracts on Basescan (Etherscan V2 API + manual)
+- **Generated deployedContracts.ts** via foundry-bridge.js (2234 lines, full ABIs)
+- **Resolved 31 TypeScript errors** — tsc --noEmit passes with 0 errors
+- **npm run build** passes clean (3 pages built)
+- **Repo sanitized** — .a0proj/ removed from git tracking, added to .gitignore, no secrets in tracked files
+- **Private key security** — stored in project secrets (§§secret), injected at runtime, never in plaintext
 
-| Category | Files | Status |
-|----------|-------|--------|
-| Next.js 14 setup | package.json, tsconfig, next.config, tailwind.config | ✅ |
-| SE2 hooks (10) | useScaffoldRead/Write/Contract, useTransactor, etc. | ✅ |
-| SE2 utils (8) | contract.ts, networks.ts, notification.tsx, etc. | ✅ |
-| SE2 services (3) | wagmiConfig.tsx, wagmiConnectors.tsx, store.ts | ✅ |
-| Wallet UI (6) | RainbowKit components + index | ✅ |
-| Pages (3) | layout.tsx, page.tsx, debug/page.tsx | ✅ |
-| Config (4) | scaffold.config.ts, deployedContracts.ts, externalContracts.ts, abi.d.ts | ✅ |
-| Foundry bridge | scripts/foundry-bridge.js | ✅ |
-| ethskills docs | 6 reference docs (standards, addresses, security, testing, building-blocks, indexing) | ✅ |
+### Deployed Contracts
 
-### Verification Results
+| Contract | Address | Basescan | Verified |
+|----------|---------|----------|----------|
+| AgentRegistry | `0x6CE3d4bf7C7140924C6AB7579b8B86Dc9ebF7a02` | [Link](https://sepolia.basescan.org/address/0x6CE3d4bf7C7140924C6AB7579b8B86Dc9ebF7a02) | ✅ |
+| ServiceAgreement | `0xC9caAA6d70B8B2F73D96d7154cb8c2c97eC16bb4` | [Link](https://sepolia.basescan.org/address/0xC9caAA6d70B8B2F73D96d7154cb8c2c97eC16bb4) | ✅ |
+| TrustNFT | `0x92F725c404d355645d5daf9D7ab7967f2f15A952` | [Link](https://sepolia.basescan.org/address/0x92F725c404d355645d5daf9D7ab7967f2f15A952) | ✅ |
 
-| Check | Status |
-|-------|--------|
-| `npm run dev` | ✅ Starts clean in 3.7s |
-| `npm run build` | ✅ All 3 pages built |
-| `tsc --noEmit` | ⚠️ 31 errors (expected — auto-resolve after contract deploy) |
-| DESIGN.md tokens match | ✅ Exact match |
-| All deliverables present | ✅ 49 files |
+### On-Chain Verification
+
+| Call | Result |
+|------|--------|
+| AgentRegistry.owner() | `0xce9B692A01D47054e9ebC15722c071cbc4BE714e` ✅ |
+| TrustNFT.name() | "AgentTrust Score" ✅ |
+| TrustNFT.symbol() | "ATS" ✅ |
+| ServiceAgreement.owner() | `0xce9B692A01D47054e9ebC15722c071cbc4BE714e` ✅ |
 
 ---
 
@@ -58,58 +49,52 @@
 | 1 | Foundry Setup + AgentRegistry | ✅ Done | `c933677` |
 | 2 | TrustNFT (ERC-7857 iNFT) | ✅ Done | `c933677` |
 | 3 | ServiceAgreement (Escrow) | ✅ Done | `c933677` |
+| 4 | Deploy Script + Base Deployment | ✅ Done | `6af8a99` |
 
 ### Next Workpacks (Priority Order)
 | # | Name | Priority | Dependencies |
 |---|------|----------|-------------|
-| 4 | Deploy Script + Base Deployment | HIGH | WP1-3 done ✅ — **HUMAN GATE** |
-| 5 | Gensyn AXL Setup | CRITICAL | None — independent |
-| 6 | Agent Implementations + ENS | HIGH | WP1 done ✅ |
-| 7 | Uniswap + KeeperHub Integration | HIGH | WP3 done ✅ |
-| 8 | 0G Storage + Compute + Wallet | HIGH | WP2 done ✅ |
-| 9 | Frontend Dashboard (SE2-Enhanced) | HIGH | WP0 ✅ + WP4 |
+| 5 | Gensyn AXL Integration | CRITICAL | None — independent |
+| 6 | Agent Implementations + ENS | HIGH | WP1 ✅ |
+| 7 | Uniswap + KeeperHub Integration | HIGH | WP3 ✅ |
+| 8 | 0G Storage + Compute + Wallet | HIGH | WP2 ✅ |
+| 9 | Frontend Dashboard (SE2-Enhanced) | HIGH | WP0 ✅ + WP4 ✅ |
 | 10 | Demo + Submit | CRITICAL | All others |
-| 11 | Triple-Layer Deployment | HIGH | WP4, WP9 |
+| 11 | Triple-Layer Deployment | HIGH | WP4 ✅, WP9 |
 
-### Known Issues
-1. **31 TypeScript errors** in SE2 cherry-picked files — all caused by empty `deployedContracts.ts`. Auto-resolve after running `node scripts/foundry-bridge.js --chain-id 8453` post-deployment.
-2. **Deploy.s.sol is a stub** — Workpack 4 will implement the real deployment script.
-3. **Wallet UI uses RainbowKit defaults** — custom AgentTrust-themed wallet components can be added in WP9.
+### Resolved Risks
+| Risk | Status |
+|------|--------|
+| 31 TS errors in SE2 files | ✅ RESOLVED — foundry-bridge.js generated deployedContracts.ts |
+| Deploy script is a stub | ✅ RESOLVED — Deploy.s.sol deployed successfully |
 
-### Risk Log
+### Remaining Risks
 | Risk | Severity | Mitigation |
 |------|----------|-----------|
-| 31 TS errors in SE2 files | LOW | Auto-resolve after contract deploy via foundry-bridge |
-| Deploy script is a stub | MEDIUM | WP4 implements real deploy |
 | No ENS real integration | MEDIUM | WP6 handles ENS + agents |
-| No AXL live communication | MEDIUM | WP5 — need 2 separate nodes |
+| AXL Go binary — no browser SDK | HIGH | Deploy 2 nodes on Akash + CORS proxy |
 
 ### Sponsor Checklist Progress
 | Sponsor | Items Done | Items Remaining |
 |---------|-----------|-----------------|
-| 0G | iNFT implemented | deploy, storage, compute, openclaw |
+| 0G | iNFT implemented | deploy on 0G, storage, compute, openclaw |
 | ENS | identity mechanism | records, discovery, subnames, no-hardcoded |
-| Gensyn | — | AXL comm, separate nodes, real utility |
+| Gensyn | research complete | AXL comm, separate nodes, real utility |
 | Uniswap | — | API swaps, settlement, FEEDBACK.md, execution |
 | KeeperHub | — | MCP/CLI, retry, gas opt, audit trail, x402 |
 
 ---
 
-## File Map (Key Files)
+## Key Files for Next Session
 
 ```
-contracts/src/          — 3 Solidity contracts (all compiling, 24/24 tests)
-contracts/script/       — Deploy.s.sol (stub — needs implementation)
-frontend/app/           — 3 pages (/, /debug, layout)
-frontend/components/    — SE2 hooks/utils/services + wallet UI
-frontend/config/        — scaffold.config.ts, deployedContracts.ts, externalContracts.ts
-frontend/utils/scaffold/ — 8 SE2 utility files
-scripts/                — foundry-bridge.js
-sdk/                    — ens.ts, keeperhub.ts, trust.ts, uniswap.ts, zerog.ts
-axl/                    — protocol.ts, node-config.ts, trust-verify.ts, message-handler.ts
-agents/                 — requester-agent/, provider-agent/
-docs/reference/ethskills/ — 6 fetched reference docs (95KB)
-progress.json           — SSOT for workpack tracking
+contracts/broadcast/Deploy.s.sol/84532/  — Forge broadcast artifacts
+cache/Deploy.s.sol/84532/               — Sensitive deployment cache (gitignored)
+frontend/config/deployedContracts.ts     — Generated contract addresses + ABIs
+contracts/.env                           — BASE_SEPOLIA_RPC_URL only
+.a0proj/secrets.env                     — PRIVATE_KEY + ETHERSCAN_KEY (gitignored)
+progress.json                           — SSOT for workpack tracking
+verify/                                  — Standard JSON inputs for re-verification
 ```
 
 ---
@@ -117,19 +102,17 @@ progress.json           — SSOT for workpack tracking
 ## How to Resume
 
 1. **Start new session**
-2. Read `progress.json` — current workpack is **4** (next incomplete)
+2. Read `progress.json` — current workpack is **5** (next incomplete)
 3. Read `BUILD-PLAN.md` for the target workpack spec
-4. Read `DESIGN.md` before any UI work
-5. Read `SKILL-PROFILE-MAP.md` for correct subordinate profile + skills
-6. Delegate to subordinate with skill loading instructions
-7. Verify output, commit incrementally
-8. Update `progress.json` after each workpack
-9. Generate new `handoff.md` at session end
+4. Read `SKILL-PROFILE-MAP.md` for correct subordinate profile + skills
+5. Delegate to subordinate with skill loading instructions
+6. Verify output, commit incrementally
+7. Update `progress.json` after each workpack
+8. Generate new `handoff.md` at session end
 
 ### Recommended Next Session
-- **Start with WP5** (Gensyn AXL Setup) — CRITICAL sponsor track, fully independent
-- **Then WP4** (Deploy Script) — requires HUMAN GATE for deployment
-- **Then WP6** (Agent Implementations + ENS) — builds on WP1
+- **Start with WP5** (Gensyn AXL) — CRITICAL $5K sponsor track, fully independent
+- **Then WP9** (Frontend Dashboard) — WP0 ✅ + WP4 ✅, unblocks WP11
 - **Or WP7** (Uniswap + KeeperHub) — fills mandatory FEEDBACK.md
 
 ---
@@ -137,13 +120,14 @@ progress.json           — SSOT for workpack tracking
 ## Commands to Verify State
 
 ```bash
-cd /a0/usr/projects/agentrust/contracts && forge build    # Should compile clean
-forge test -vvv                                             # Should pass 24/24
-cd /a0/usr/projects/agentrust/frontend && npm run dev       # Should start clean
-npm run build                                               # Should build 3 pages
+cd /a0/usr/projects/agentrust/contracts && forge test -vvv   # Should pass 24/24
+cd /a0/usr/projects/agentrust/frontend && npm run build      # Should build 3 pages
+npx tsc --noEmit                                             # Should have 0 errors
 git log --oneline -5                                        # Verify commit history
+# On-chain verification:
+cast call 0x92F725c404d355645d5daf9D7ab7967f2f15A952 "name()(string)" --rpc-url https://sepolia.base.org
 ```
 
 ---
 
-_Generated by Agent Zero — Session 2 wrap-up_
+_Generated by Agent Zero — Session 3 wrap-up_
