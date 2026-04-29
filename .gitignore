@@ -1,5 +1,8 @@
 # Dependencies
 node_modules/
+ 
+ # Agent Zero project data (contains secrets!)
+ .a0proj/
 lib/
 
 # Foundry
