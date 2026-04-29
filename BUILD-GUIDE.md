@@ -2,6 +2,7 @@
 
 > **Single reference for building AgentTrust across Agent Zero, Windsurf, GitHub Copilot, and Codex.**
 > **Design system:** Stripe-inspired, defined in `DESIGN.md`
+> - **Gensyn AXL Research:** `docs/reference/gensyn-axl-deep-research.md`
 > **Last updated:** 2026-04-26
 
 ---
@@ -15,8 +16,7 @@
 | Contract tests | REAL tests | AgentRegistry.t.sol (116L), TrustNFT.t.sol (128L), ServiceAgreement.t.sol (147L) |
 | Deploy script | STUB | Deploy.s.sol (25L) - needs real deployment logic |
 | SDK modules | REAL code | ens.ts (56L), keeperhub.ts (74L), trust.ts (78L), uniswap.ts (80L), zerog.ts (59L) |
-| AXL modules | REAL code | protocol.ts (89L), node-config.ts (83L), trust-verify.ts (73L), message-handler.ts (88L) |
-| Agent files | REAL code | requester (105L), provider (109L) |
+| AXL modules | SKELETON (needs rewrite) | protocol.ts ✅ (89L), node-config.ts ❌ (needs AXLClient), trust-verify.ts ⚠️ (needs on-chain), message-handler.ts ⚠️ (needs polling). See docs/reference/gensyn-axl-deep-research.md |
 | **DESIGN.md** | **DONE** | **1051 lines - Stripe design system with Tailwind config + agent prompts** |
 | **stripe-preview.html** | **DONE** | **803 lines - visual reference** |
 | Frontend | EMPTY | Only .gitkeep files, no package.json |

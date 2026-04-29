@@ -13,7 +13,7 @@
     "2": { "name": "TrustNFT (ERC-7857 iNFT)", "status": "done", "priority": "CRITICAL", "sponsor_tracks": ["0G Framework", "0G On-Chain AI"], "started": "2026-04-27T00:30:00Z", "completed": "2026-04-27T01:50:00Z", "commits": ["c933677"], "notes": "TrustNFT.sol compiles and passes 10/10 tests. tokenId sentinel fixed. Score formula fixed. Transfer lock (SBT) enforced. ERC-7857 iNFT pattern ready for 0G integration." },
     "3": { "name": "ServiceAgreement (Escrow)", "status": "done", "priority": "CRITICAL", "sponsor_tracks": ["Uniswap", "KeeperHub"], "started": "2026-04-27T00:30:00Z", "completed": "2026-04-27T01:50:00Z", "commits": ["c933677"], "notes": "ServiceAgreement.sol compiles and passes 6/6 tests. Full lifecycle (create→accept→fulfill→settle), cancel, dispute. Settled enum added. Ready for Uniswap payment + KeeperHub execution." },
     "4": { "name": "Deploy Script + Base Deployment", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["All"], "started": null, "completed": null, "commits": [], "notes": "HUMAN GATE: contract_deploy. Deploy.s.sol is a stub — needs implementation.", "gate_required": true },
-    "5": { "name": "Gensyn AXL Setup", "status": "pending", "priority": "CRITICAL", "sponsor_tracks": ["Gensyn"], "started": null, "completed": null, "commits": [], "notes": "AXL modules exist (protocol.ts, node-config.ts, trust-verify.ts, message-handler.ts) but untested. Need 2 separate nodes communicating." },
+    "5": { "name": "Gensyn AXL Integration", "status": "pending", "priority": "CRITICAL", "sponsor_tracks": ["Gensyn ($5K)"], "started": null, "completed": null, "commits": [], "notes": "RESEARCH COMPLETE. AXL is Go binary with HTTP REST (5 endpoints). No JS/TS SDK. Need: 1) Build 2 AXL Go nodes, 2) AXLClient TS HTTP wrapper (replace node-config.ts), 3) CORS proxy (Nginx/Cloudflare), 4) ACK layer for fire-and-forget /send, 5) Integration test across nodes. Bootstrap peers: tls://34.46.48.224:9001, tls://136.111.135.206:9001. Prize: $2.5K/$1.5K/$1K. See docs/reference/gensyn-axl-deep-research.md" },
     "6": { "name": "Agent Implementations + ENS", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["ENS", "0G"], "started": null, "completed": null, "commits": [], "notes": "Requester + Provider agent scaffolds exist. ENS setup scripts exist. Need real implementation and ENS integration." },
     "7": { "name": "Uniswap + KeeperHub Integration", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["Uniswap", "KeeperHub"], "started": null, "completed": null, "commits": [], "notes": "Fill FEEDBACK.md as you go. SDK modules exist but untested." },
     "8": { "name": "0G Storage + Compute + Wallet", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["0G"], "started": null, "completed": null, "commits": [], "notes": "zerog.ts SDK exists but untested. Wallet setup needed." },
@@ -25,11 +25,12 @@
   "risk_log": [
     { "risk": "31 TS errors in SE2 files (expected)", "severity": "LOW", "mitigation": "Auto-resolve after contract deployment via foundry-bridge.js" },
     { "risk": "No ENS integration yet", "severity": "MEDIUM", "mitigation": "Workpack 6 handles this" },
-    { "risk": "Deploy script is a stub", "severity": "MEDIUM", "mitigation": "Workpack 4 implements real deploy" }
+    { "risk": "Deploy script is a stub", "severity": "MEDIUM", "mitigation": "Workpack 4 implements real deploy" },
+    { "risk": "AXL is Go binary — no browser SDK, needs server-side nodes + CORS proxy", "severity": "HIGH", "mitigation": "Deploy 2 AXL nodes on Akash with Nginx CORS proxy. Full research in docs/reference/gensyn-axl-deep-research.md" }
   ],
   "sponsor_checklist": {
     "0G": { "deploy_on_0g": false, "storage_used": false, "compute_used": false, "inft_implemented": true, "openclaw_referenced": false },
-    "gensyn": { "axl_primary_comm": false, "separate_nodes": false, "real_utility": false },
+    "gensyn": { "axl_primary_comm": false, "separate_nodes": false, "real_utility": false, "research_complete": true, "go_binary_confirmed": true, "cors_proxy_needed": true },
     "ens": { "identity_mechanism": true, "records_metadata": false, "service_discovery": false, "subnames": false, "no_hardcoded": false },
     "uniswap": { "api_swaps": false, "autonomous_settlement": false, "feedback_md": false, "real_execution": false },
     "keeperhub": { "mcp_or_cli": false, "retry_logic": false, "gas_optimization": false, "audit_trail": false, "x402_or_mpp": false }

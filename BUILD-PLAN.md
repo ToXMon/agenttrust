@@ -11,6 +11,7 @@
 > - SE2 Cherry-Pick: `docs/SE2-INTEGRATION-GUIDE.md`
 > - ethskills Reference: `docs/ETHSKILLS-REFERENCE.md`
 > - Deployment Strategy: `docs/DEPLOYMENT-STRATEGY.md`
+> - Gensyn AXL Research: `docs/reference/gensyn-axl-deep-research.md`
 
 ---
 
@@ -267,29 +268,84 @@ docs/reference/ethskills/            ← 6 fetched skill documents
 
 ---
 
-## Workpack 5: Gensyn AXL Setup
+## Workpack 5: Gensyn AXL Integration
 
-**Session budget:** ~25% context
+**Session budget:** ~30% context (may need 2 sessions)
 **Priority:** CRITICAL
-**Sponsor tracks:** Gensyn ($10K)
+**Sponsor tracks:** Gensyn ($5K)
+**Reference docs:** `docs/reference/gensyn-axl-deep-research.md`
+**Architecture constraint:** AXL is a Go binary with HTTP REST API — no browser SDK exists
 
-### Tasks
-1. Research AXL SDK from https://docs.gensyn.ai/tech/agent-exchange-layer
-2. Clone reference: https://github.com/gensyn-ai/collaborative-autoresearch-demo
-3. Set up 2 separate AXL nodes (one per agent)
-4. Implement `axl/protocol.ts` — AgentTrust message schema
-5. Implement `axl/message-handler.ts` — trust verification over AXL
-6. Implement `axl/trust-verify.ts` — capability verification protocol
-7. Test: send message from Node 1 to Node 2 and verify receipt
+### Why This Workpack Exists
+
+Gensyn AXL is **not a browser library or npm package** — it is a compiled Go binary that exposes 5 HTTP REST endpoints on `localhost:9002`. There is no JS/TS SDK. Our existing skeleton `axl/` files (`node-config.ts`, `message-handler.ts`, `trust-verify.ts`) assumed an in-process SDK and need restructuring into an HTTP client wrapper.
+
+The Gensyn prize ($5K pool: $2.5K/$1.5K/$1K) requires **separate nodes with real P2P communication** — not in-process simulation. We need:
+- 2 server-side AXL Go nodes running on different ports
+- A CORS proxy (Nginx or Cloudflare tunnel) so the browser can reach the nodes
+- A thin TypeScript HTTP wrapper (`AXLClient`) to replace the current skeleton
+- An ACK layer because `/send` is fire-and-forget with no delivery confirmation
+
+### Phase 1: Build & Deploy AXL Nodes (devops)
+
+1. Clone and build AXL Go binary from `https://github.com/gensyn-ai/axl`
+   - Requires Go 1.25.5+ (auto-downloaded via `GOTOOLCHAIN=auto`)
+   - `git clone` → `make build` → produces `./node` binary
+2. Generate 2 ed25519 key pairs:
+   ```bash
+   openssl genpkey -algorithm ed25519 -out private-a.pem
+   openssl genpkey -algorithm ed25519 -out private-b.pem
+   ```
+3. Create 2 node configs (`node-a.json`, `node-b.json`):
+   - **Node A:** `PrivateKeyPath`: "private-a.pem", `Peers`: ["tls://34.46.48.224:9001", "tls://136.111.135.206:9001"], `Listen`: [], `api_port`: 9002, `tcp_port`: 7000
+   - **Node B:** `PrivateKeyPath`: "private-b.pem", same Peers, `api_port`: 9012, `tcp_port`: 7010
+4. Start both nodes, verify P2P via `curl http://localhost:9002/topology`
+5. Set up Nginx CORS reverse proxy (config in deep-research.md Appendix B)
+6. Save node configs to `axl/configs/` directory
+
+### Phase 2: AXL Client Library (TypeScript)
+
+1. Replace `axl/node-config.ts` — Remove `AXLNode` class, create `AXLClient` HTTP wrapper
+2. Create `axl/axl-client.ts` — Thin fetch wrapper for 5 endpoints:
+   - `getTopology()` → GET /topology
+   - `send(peerId, message)` → POST /send with `X-Destination-Peer-Id` header
+   - `recv()` → GET /recv (returns null on 204)
+   - `startPolling(callback)` → 100ms poll loop
+   - `stopPolling()` → stop loop
+3. Keep `axl/protocol.ts` as-is — message types and interfaces are good
+4. Update `axl/message-handler.ts` — Wire `handle()` to use `AXLClient.recv()` polling
+5. Wire `axl/trust-verify.ts` to real on-chain data (not AXL-specific, but verify interface)
+
+### Phase 3: ACK & Reliability Layer
+
+1. Create `axl/ack-layer.ts` — Wrap fire-and-forget `/send` with:
+   - Message ID tracking
+   - ACK message type (add to `protocol.ts` `MessageType` enum)
+   - Resend with exponential backoff (max 3 retries)
+   - Timeout after 30 seconds
+
+### Phase 4: Integration Test
+
+1. Start both AXL nodes
+2. From Node A: send `DISCOVER` message to Node B's peer ID
+3. From Node B: poll `/recv`, verify message received
+4. Send `TRUST_QUERY`, verify `TRUST_RESPONSE` round-trip
+5. Send `SERVICE_REQUEST`, verify `SERVICE_ACCEPT`/`REJECT`
+6. Document peer IDs and test results
 
 ### Verification
-- [ ] 2 AXL nodes running on different ports
-- [ ] Messages sent from Node 1 received at Node 2
-- [ ] Trust verification message schema works
-- [ ] NOT in-process — real P2P across nodes
+- [ ] AXL Go binary builds successfully
+- [ ] 2 nodes running on different ports (9002, 9012)
+- [ ] `/topology` shows both nodes peered
+- [ ] Messages sent from Node A received at Node B
+- [ ] Messages sent from Node B received at Node A
+- [ ] CORS proxy allows browser access
+- [ ] AXLClient TypeScript wrapper compiles and works
+- [ ] ACK layer provides delivery confirmation
+- [ ] NOT in-process — real P2P across separate AXL nodes
 
 ### Commit
-`feat: Gensyn AXL P2P communication with trust verification protocol`
+`feat: Gensyn AXL P2P integration — Go nodes + TypeScript client + ACK layer`
 
 ---
 

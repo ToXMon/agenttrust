@@ -57,12 +57,13 @@
 | Write Deploy.s.sol | `web3_engineer` | `solidity` | — |
 | Deploy to Base Sepolia | — (main agent) | — | 🚨 GATE |
 
-### Workpack 5: Gensyn AXL
+### Workpack 5: Gensyn AXL Integration
 | Task | Profile | Skills | ASE Commands |
 |------|---------|--------|-------------|
-| Research AXL SDK | `researcher` | — | — |
-| Implement AXL modules | `backend_engineer` | `code-review-skill` | `/audit` after |
-| Test P2P communication | `qa_engineer` | `swebok-developer-knowledge` | — |
+| Build & deploy AXL Go nodes | `devops_engineer` | read `docs/reference/gensyn-axl-deep-research.md` | — |
+| AXLClient TypeScript wrapper + ACK layer | `backend_engineer` | `code-review-skill` + read `docs/reference/gensyn-axl-deep-research.md` | `/audit` after |
+| Wire message-handler to AXL polling | `backend_engineer` | `code-review-skill` | — |
+| Integration test across 2 nodes | `qa_engineer` | `swebok-developer-knowledge` | — |
 
 ### Workpack 6: Agents + ENS
 | Task | Profile | Skills | ASE Commands |
@@ -149,6 +150,7 @@ When delegating tasks for SE2 or ethskills integration, include these references
 | ethskills usage | `docs/ETHSKILLS-REFERENCE.md` | "Read docs/ETHSKILLS-REFERENCE.md for verified addresses and patterns" |
 | Deployment | `docs/DEPLOYMENT-STRATEGY.md` | "Read docs/DEPLOYMENT-STRATEGY.md for SDL and Dockerfile" |
 | Foundry bridge | SE2 guide section 7 | "Follow the foundry-bridge.js script in docs/SE2-INTEGRATION-GUIDE.md section 7" |
+| Gensyn AXL | `docs/reference/gensyn-axl-deep-research.md` | "Read docs/reference/gensyn-axl-deep-research.md for AXL architecture, endpoints, and deployment" |
 
 ## ASE Harness Commands in Workflow
 

@@ -660,3 +660,144 @@ ReputationRegistry: 0x8004BAa17C55a88189AE136b182e5fdA19dE9b63
 === VERIFICATION ===
 Basescan: https://basescan.org/address/<addr>
 ```
+
+---
+
+## 5. Gensyn AXL Node Deployment
+
+> **Critical**: AXL nodes are Go binaries — they CANNOT run in the browser. They require server-side deployment.
+
+### Architecture
+
+```
+Browser (Vercel/Akash) ──HTTPS──→ Nginx/CORS Proxy ──→ AXL Node A (:9002)
+                                                       ↕ P2P Mesh
+                                  Nginx/CORS Proxy ──→ AXL Node B (:9012)
+```
+
+### AXL Node Docker Setup
+
+See `docs/reference/gensyn-axl-deep-research.md` Appendix A for Dockerfile.
+
+Build and run:
+```bash
+# Build AXL binary
+git clone https://github.com/gensyn-ai/axl.git /tmp/axl && cd /tmp/axl
+make build
+
+# Generate keys
+openssl genpkey -algorithm ed25519 -out /data/private-a.pem
+openssl genpkey -algorithm ed25519 -out /data/private-b.pem
+
+# Node A
+./node -config /config/node-a.json &
+
+# Node B
+./node -config /config/node-b.json &
+```
+
+### Akash SDL for AXL Nodes
+
+Recommended: 2 separate Akash deployments (one per node) or 1 deployment with 2 services.
+
+```yaml
+version: "2.0"
+services:
+  axl-node-a:
+    image: agenttrust/axl-node:latest
+    expose:
+      - port: 9002
+        as: 80
+        to:
+          - global: true
+      - port: 7000
+        as: 7000
+        to:
+          - global: true
+    env:
+      - "NODE_CONFIG=/config/node-a.json"
+  axl-node-b:
+    image: agenttrust/axl-node:latest
+    expose:
+      - port: 9012
+        as: 80
+        to:
+          - global: true
+      - port: 7010
+        as: 7010
+        to:
+          - global: true
+    env:
+      - "NODE_CONFIG=/config/node-b.json"
+profiles:
+  compute:
+    axl-node:
+      resources:
+        cpu:
+          units: 1
+        memory:
+          size: 2Gi
+        storage:
+          size: 5Gi
+  placement:
+    dcloud:
+      pricing:
+        axl-node:
+          denom: uact
+          amount: 1000
+deployment:
+  axl-node-a:
+    dcloud:
+      profile: axl-node
+      count: 1
+  axl-node-b:
+    dcloud:
+      profile: axl-node
+      count: 1
+```
+
+### CORS Proxy (Required)
+
+AXL nodes do NOT support CORS. Use one of:
+
+1. **Nginx reverse proxy** (recommended for Akash):
+```nginx
+server {
+    listen 80;
+    location /api/node-a/ {
+        proxy_pass http://127.0.0.1:9002/;
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS";
+        add_header Access-Control-Allow-Headers *;
+        if ($request_method = OPTIONS) { return 204; }
+    }
+    location /api/node-b/ {
+        proxy_pass http://127.0.0.1:9012/;
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS";
+        add_header Access-Control-Allow-Headers *;
+        if ($request_method = OPTIONS) { return 204; }
+    }
+}
+```
+
+2. **Cloudflare Tunnel** (free, adds CORS automatically):
+```bash
+cloudflared tunnel --url http://localhost:9002 &  # Node A
+cloudflared tunnel --url http://localhost:9012 &  # Node B
+```
+
+### Key Configuration
+
+| Setting | Node A | Node B |
+|---------|--------|--------|
+| API Port | 9002 | 9012 |
+| TCP Port | 7000 | 7010 |
+| Private Key | private-a.pem | private-b.pem |
+| Bootstrap Peers | tls://34.46.48.224:9001, tls://136.111.135.206:9001 | (same) |
+
+### Pre-Demo Checklist
+- [ ] Both AXL nodes started 5+ minutes before demo
+- [ ] `/topology` endpoint shows both nodes peered
+- [ ] CORS proxy verified from browser console
+- [ ] Test message round-trip confirmed
