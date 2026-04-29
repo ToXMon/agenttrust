@@ -15,6 +15,7 @@ export enum MessageType {
   AGREEMENT_CREATE = "agreement_create",
   AGREEMENT_SETTLE = "agreement_settle",
   PAYMENT_RELEASE = "payment_release",
+  MESSAGE_ACK = "message_ack",
 }
 
 export interface AgentTrustMessage {
@@ -26,6 +27,13 @@ export interface AgentTrustMessage {
   nonce: string;
   payload: Record<string, unknown>;
   signature?: string;
+}
+
+/** ACK payload for delivery confirmation */
+export interface ACKPayload {
+  originalNonce: string;
+  received: boolean;
+  timestamp: number;
 }
 
 export interface DiscoverPayload {

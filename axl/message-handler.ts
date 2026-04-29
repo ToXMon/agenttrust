@@ -3,18 +3,21 @@ import {
   MessageType,
   validateMessage,
 } from "./protocol.js";
+import type { AXLClient, ReceivedMessage } from "./axl-client.js";
 import type { TrustVerify } from "./trust-verify.js";
 
 interface MessageHandlerConfig {
   agentAddress: string;
   trustVerifier: TrustVerify;
+  client: AXLClient;
 }
 
 type MessageCallback = (message: AgentTrustMessage) => Promise<AgentTrustMessage | null>;
 
 /**
  * AXL Message Handler
- * Processes incoming AXL messages with trust verification
+ * Processes incoming AXL messages with trust verification.
+ * Wires to real AXL polling via AXLClient.
  */
 export class MessageHandler {
   private readonly config: MessageHandlerConfig;
@@ -28,8 +31,27 @@ export class MessageHandler {
     this.registerDefaultHandlers();
   }
 
-  async handle(raw: unknown): Promise<AgentTrustMessage | null> {
-    const message = raw as AgentTrustMessage;
+  /** Start polling for messages via AXLClient. */
+  start(): void {
+    this.config.client.startPolling(
+      (msg: ReceivedMessage) => { void this.handleRawMessage(msg); },
+      100,
+    );
+    console.log("[MessageHandler] Started polling for messages");
+  }
+
+  /** Stop polling for messages. */
+  stop(): void {
+    this.config.client.stopPolling();
+    console.log("[MessageHandler] Stopped polling");
+  }
+
+  /**
+   * Process a raw received message from AXL /recv polling.
+   * Validates, deduplicates, and dispatches to the appropriate handler.
+   */
+  async handleRawMessage(raw: ReceivedMessage): Promise<AgentTrustMessage | null> {
+    const message = raw.body;
 
     if (!validateMessage(message)) {
       console.error("[MessageHandler] Invalid message received");
