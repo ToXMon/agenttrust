@@ -52,6 +52,13 @@ npm-debug.log*
 
 # Keys
 *.pem
+ 
+ # AXL binary (17MB, rebuild from source)
+ axl/node
+ axl/keys/
+ 
+ # AXL logs
+ /tmp/axl-*.log
 *.key
 keystore/
 

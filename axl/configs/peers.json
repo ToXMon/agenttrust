@@ -1,0 +1,27 @@
+{
+  "nodeA": {
+    "apiPort": 9002,
+    "tcpPort": 7000,
+    "bridgeAddr": "0.0.0.0",
+    "ipv6": "200:dc3:f6f3:1dba:eba7:810d:6d87:4d8d",
+    "publicKey": "f91e048671228a2c3f79493c59391687f837b27ad58d54ab61f99366863fce22",
+    "apiUrl": "http://localhost:9002",
+    "role": "requester"
+  },
+  "nodeB": {
+    "apiPort": 9012,
+    "tcpPort": 7000,
+    "bridgeAddr": "0.0.0.0",
+    "ipv6": "201:b2f4:4185:b888:3b10:1bbf:223a:fee9",
+    "publicKey": "5342ef9e91ddf13bf91037714045b563fe2e316213356a5441c749732015c758",
+    "apiUrl": "http://localhost:9012",
+    "role": "provider"
+  },
+  "bootstrapPeers": [
+    "tls://34.46.48.224:9001",
+    "tls://136.111.135.206:9001"
+  ],
+  "verified": true,
+  "lastTested": "2026-04-29T16:52:00Z",
+  "notes": "Both nodes MUST use tcp_port=7000 (gVisor virtual port) for mesh routing. api_port differentiates HTTP endpoints. Key pairs are ed25519, stored in axl/keys/"
+}
