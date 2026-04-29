@@ -113,6 +113,16 @@
       ],
       "notes": "Full Basenames (Base L2 ENS) integration. CRITICAL: Base Sepolia uses Basenames (*.base.eth), NOT standard ENS. All operations via direct contract calls to L2Resolver. sdk/ens.ts: 489 lines with live read/write/resolve operations. Provider agent: REAL on-chain analytics (gas/tx stats from Base Sepolia blocks). Requester agent: ENS discovery, trust verification, AXL service requests. Both agents connect to AXL nodes (A=9002, B=9012). Trust scores read from deployed TrustNFT on Base Sepolia. tsc 0 errors."
     },
+    "6.5": {
+      "name": "Base Mainnet Deployment + Basename Integration",
+      "status": "pending",
+      "priority": "CRITICAL",
+      "sponsor_tracks": ["ENS", "All"],
+      "started": null,
+      "completed": null,
+      "commits": [],
+      "notes": "PIVOT: Deploy contracts to Base Mainnet (chainId 8453). User registered agentrust.base.eth on Base Mainnet. Base Mainnet addresses: L2Resolver=0xC6d566A56A1aFf6508b41f6c90ff131615583BCD, Registry=0xb94704422c2a1e396835a571837aa5ae53285a95, RPC=https://mainnet.base.org. Must deploy AgentRegistry+TrustNFT+ServiceAgreement to mainnet, update sdk/ens.ts, set subnames and text records on agentrust.base.eth."
+    },
     "7": {
       "name": "Uniswap + KeeperHub Integration",
       "status": "pending",
