@@ -1,133 +1,90 @@
-# Session Handoff — AgentTrust Smart Contract Deployment
+# Session Handoff — AgentTrust Gensyn AXL Integration
 
 **Date:** 2026-04-29  
-**Session:** 3  
-**Duration:** ~75 min  
-**Commit:** `6af8a99`  
+**Session:** 4  
+**Duration:** ~55 min  
+**Commits:** `8d525ca`, `430ee35`, `3109a7f`  
 **Branch:** `main`  
-**Status:** ✅ All green — contracts deployed, verified, frontend type-safe, repo sanitized
+**Status:** ✅ All green — 2 AXL nodes running, bidirectional P2P verified, 5/5 integration tests passed
 
 ---
 
 ## What Was Done
 
-### Workpack 4: Deploy Script + Base Deployment
+### Workpack 5: Gensyn AXL Integration (COMPLETE)
 
-- **Deployed 3 contracts** to Base Sepolia testnet (chain 84532, block 40853462)
-- **Source-verified** all 3 contracts on Basescan (Etherscan V2 API + manual)
-- **Generated deployedContracts.ts** via foundry-bridge.js (2234 lines, full ABIs)
-- **Resolved 31 TypeScript errors** — tsc --noEmit passes with 0 errors
-- **npm run build** passes clean (3 pages built)
-- **Repo sanitized** — .a0proj/ removed from git tracking, added to .gitignore, no secrets in tracked files
-- **Private key security** — stored in project secrets (§§secret), injected at runtime, never in plaintext
+#### Phase 1: AXL Go Nodes (commit 8d525ca)
+- Built AXL Go binary from github.com/gensyn-ai/axl (Go 1.25.5 via GOTOOLCHAIN=auto)
+- Generated 2 ed25519 key pairs for separate node identities
+- Node A (requester): api_port=9002, tcp_port=7000, pubkey=f91e0486...
+- Node B (provider): api_port=9012, tcp_port=7000, pubkey=5342ef9e...
+- CRITICAL FINDING: Both nodes MUST use tcp_port=7000 (gVisor virtual port)
+- Verified bidirectional P2P via curl send/recv
+- Created axl/start.sh management script (start/stop/status/test)
 
-### Deployed Contracts
+#### Phase 2+3: AXLClient + ACK Layer (commit 430ee35)
+- axl-client.ts (237 lines): Full HTTP client for AXL REST API
+- ack-layer.ts (227 lines): Delivery confirmation over fire-and-forget /send
+- protocol.ts: Added MESSAGE_ACK type and ACKPayload interface
+- message-handler.ts: Wired to AXLClient polling with start/stop methods
 
-| Contract | Address | Basescan | Verified |
-|----------|---------|----------|----------|
-| AgentRegistry | `0x6CE3d4bf7C7140924C6AB7579b8B86Dc9ebF7a02` | [Link](https://sepolia.basescan.org/address/0x6CE3d4bf7C7140924C6AB7579b8B86Dc9ebF7a02) | ✅ |
-| ServiceAgreement | `0xC9caAA6d70B8B2F73D96d7154cb8c2c97eC16bb4` | [Link](https://sepolia.basescan.org/address/0xC9caAA6d70B8B2F73D96d7154cb8c2c97eC16bb4) | ✅ |
-| TrustNFT | `0x92F725c404d355645d5daf9D7ab7967f2f15A952` | [Link](https://sepolia.basescan.org/address/0x92F725c404d355645d5daf9D7ab7967f2f15A952) | ✅ |
-
-### On-Chain Verification
-
-| Call | Result |
-|------|--------|
-| AgentRegistry.owner() | `0xce9B692A01D47054e9ebC15722c071cbc4BE714e` ✅ |
-| TrustNFT.name() | "AgentTrust Score" ✅ |
-| TrustNFT.symbol() | "ATS" ✅ |
-| ServiceAgreement.owner() | `0xce9B692A01D47054e9ebC15722c071cbc4BE714e` ✅ |
+#### Phase 4: Integration Test (commit 3109a7f)
+- 5/5 tests passed with real P2P messaging:
+  1. Both nodes online with valid keys (342ms)
+  2. Send from A to B - DISCOVER (566ms)
+  3. Trust query/response round-trip (608ms)
+  4. Service request flow - REQUEST/ACCEPT (580ms)
+  5. Polling mechanism (481ms)
+- Run: npx tsx axl/integration-test.ts
 
 ---
 
-## Project State
-
-### Completed Workpacks
-| # | Name | Status | Commit |
+## Completed Workpacks
+| # | Name | Status | Commits |
 |---|------|--------|--------|
-| 0 | SE2 Frontend Foundation + ethskills | ✅ Done | `6f60af0` |
-| 1 | Foundry Setup + AgentRegistry | ✅ Done | `c933677` |
-| 2 | TrustNFT (ERC-7857 iNFT) | ✅ Done | `c933677` |
-| 3 | ServiceAgreement (Escrow) | ✅ Done | `c933677` |
-| 4 | Deploy Script + Base Deployment | ✅ Done | `6af8a99` |
+| 0 | SE2 Frontend Foundation + ethskills | ✅ Done | 6f60af0 |
+| 1 | Foundry Setup + AgentRegistry | ✅ Done | c933677 |
+| 2 | TrustNFT (ERC-7857 iNFT) | ✅ Done | c933677 |
+| 3 | ServiceAgreement (Escrow) | ✅ Done | c933677 |
+| 4 | Deploy Script + Base Deployment | ✅ Done | 6af8a99 |
+| 5 | Gensyn AXL Integration | ✅ Done | 8d525ca, 430ee35, 3109a7f |
 
-### Next Workpacks (Priority Order)
+## Next Workpacks
 | # | Name | Priority | Dependencies |
 |---|------|----------|-------------|
-| 5 | Gensyn AXL Integration | CRITICAL | None — independent |
-| 6 | Agent Implementations + ENS | HIGH | WP1 ✅ |
-| 7 | Uniswap + KeeperHub Integration | HIGH | WP3 ✅ |
-| 8 | 0G Storage + Compute + Wallet | HIGH | WP2 ✅ |
-| 9 | Frontend Dashboard (SE2-Enhanced) | HIGH | WP0 ✅ + WP4 ✅ |
+| 6 | Agent Implementations + ENS | HIGH | WP1+WP5 done |
+| 7 | Uniswap + KeeperHub Integration | HIGH | WP3 done |
+| 8 | 0G Storage + Compute + Wallet | HIGH | WP2 done |
+| 9 | Frontend Dashboard (SE2-Enhanced) | HIGH | WP0+WP4 done |
 | 10 | Demo + Submit | CRITICAL | All others |
-| 11 | Triple-Layer Deployment | HIGH | WP4 ✅, WP9 |
+| 11 | Triple-Layer Deployment | HIGH | WP4+WP9 |
 
-### Resolved Risks
-| Risk | Status |
-|------|--------|
-| 31 TS errors in SE2 files | ✅ RESOLVED — foundry-bridge.js generated deployedContracts.ts |
-| Deploy script is a stub | ✅ RESOLVED — Deploy.s.sol deployed successfully |
+## Sponsor Checklist
+| Sponsor | Done | Remaining |
+|---------|------|-----------|
+| 0G | iNFT implemented | deploy, storage, compute, openclaw |
+| ENS | identity mechanism | records, discovery, subnames |
+| Gensyn | AXL comm, separate nodes, real utility, integration test | CORS proxy |
+| Uniswap | - | API swaps, settlement, FEEDBACK.md |
+| KeeperHub | - | MCP/CLI, retry, audit trail |
 
-### Remaining Risks
-| Risk | Severity | Mitigation |
-|------|----------|-----------|
-| No ENS real integration | MEDIUM | WP6 handles ENS + agents |
-| AXL Go binary — no browser SDK | HIGH | Deploy 2 nodes on Akash + CORS proxy |
-
-### Sponsor Checklist Progress
-| Sponsor | Items Done | Items Remaining |
-|---------|-----------|-----------------|
-| 0G | iNFT implemented | deploy on 0G, storage, compute, openclaw |
-| ENS | identity mechanism | records, discovery, subnames, no-hardcoded |
-| Gensyn | research complete | AXL comm, separate nodes, real utility |
-| Uniswap | — | API swaps, settlement, FEEDBACK.md, execution |
-| KeeperHub | — | MCP/CLI, retry, gas opt, audit trail, x402 |
-
----
-
-## Key Files for Next Session
-
-```
-contracts/broadcast/Deploy.s.sol/84532/  — Forge broadcast artifacts
-cache/Deploy.s.sol/84532/               — Sensitive deployment cache (gitignored)
-frontend/config/deployedContracts.ts     — Generated contract addresses + ABIs
-contracts/.env                           — BASE_SEPOLIA_RPC_URL only
-.a0proj/secrets.env                     — PRIVATE_KEY + ETHERSCAN_KEY (gitignored)
-progress.json                           — SSOT for workpack tracking
-verify/                                  — Standard JSON inputs for re-verification
-```
-
----
+## CRITICAL: AXL tcp_port Finding
+Both nodes MUST use tcp_port=7000 (gVisor virtual port). The /send handler uses the local node tcp_port to connect to the remote peer mesh IPv6. If Node A has tcp_port=7000 and Node B has tcp_port=7010, messages from A to B fail with connection refused.
 
 ## How to Resume
+1. Read progress.json (current workpack: 6)
+2. Read BUILD-PLAN.md for WP6 spec
+3. Read SKILL-PROFILE-MAP.md for delegation
+4. Delegate to subordinate with skill loading instructions
+5. Verify, commit, update progress.json
+6. Generate handoff.md
 
-1. **Start new session**
-2. Read `progress.json` — current workpack is **5** (next incomplete)
-3. Read `BUILD-PLAN.md` for the target workpack spec
-4. Read `SKILL-PROFILE-MAP.md` for correct subordinate profile + skills
-5. Delegate to subordinate with skill loading instructions
-6. Verify output, commit incrementally
-7. Update `progress.json` after each workpack
-8. Generate new `handoff.md` at session end
-
-### Recommended Next Session
-- **Start with WP5** (Gensyn AXL) — CRITICAL $5K sponsor track, fully independent
-- **Then WP9** (Frontend Dashboard) — WP0 ✅ + WP4 ✅, unblocks WP11
-- **Or WP7** (Uniswap + KeeperHub) — fills mandatory FEEDBACK.md
-
----
-
-## Commands to Verify State
-
+## AXL Nodes Quick Start
 ```bash
-cd /a0/usr/projects/agentrust/contracts && forge test -vvv   # Should pass 24/24
-cd /a0/usr/projects/agentrust/frontend && npm run build      # Should build 3 pages
-npx tsc --noEmit                                             # Should have 0 errors
-git log --oneline -5                                        # Verify commit history
-# On-chain verification:
-cast call 0x92F725c404d355645d5daf9D7ab7967f2f15A952 "name()(string)" --rpc-url https://sepolia.base.org
+cd /tmp && git clone https://github.com/gensyn-ai/axl && cd axl && make build
+cp node /a0/usr/projects/agentrust/axl/node
+./axl/start.sh start
+./axl/start.sh test
 ```
 
----
-
-_Generated by Agent Zero — Session 3 wrap-up_
+_Generated by Agent Zero — Session 4 wrap-up_

@@ -3,45 +3,249 @@
   "hackathon": "ETHGlobal Open Agents 2026",
   "deadline": "2026-05-03T12:00:00-04:00",
   "repo": "https://github.com/ToXMon/agenttrust",
-  "current_workpack": 5,
+  "current_workpack": 6,
   "total_workpacks": 12,
-  "sessions_completed": 3,
-  "last_session": "2026-04-29T16:15:00Z",
+  "sessions_completed": 4,
+  "last_session": "2026-04-29T17:20:00Z",
   "workpacks": {
-    "0": { "name": "SE2 Frontend Foundation + ethskills Setup", "status": "done", "priority": "CRITICAL", "sponsor_tracks": ["All"], "started": "2026-04-27T02:00:00Z", "completed": "2026-04-27T03:20:00Z", "commits": ["6f60af0"], "notes": "Next.js 14 + TailwindCSS + 30 SE2 files cherry-picked. Debug Contracts at /debug. RainbowKit wallet UI. Hero landing page. 6 ethskills docs fetched. externalContracts.ts with 7 Base addresses. Foundry bridge script. DESIGN.md tokens in tailwind.config.ts. 31 TS errors expected (resolve post-deploy). npm run dev starts clean, build passes." },
-    "1": { "name": "Foundry Setup + AgentRegistry", "status": "done", "priority": "CRITICAL", "sponsor_tracks": ["0G Framework", "ENS"], "started": "2026-04-27T00:30:00Z", "completed": "2026-04-27T01:50:00Z", "commits": ["c933677"], "notes": "Bootstrap: Foundry 1.5.1, forge build clean, 24/24 tests pass, tsc --noEmit clean. Fixed tokenId=0 sentinel bug, Ownable imports, Settled enum, ERC20Mock, types.ts. All 3 contracts compile and tested." },
-    "2": { "name": "TrustNFT (ERC-7857 iNFT)", "status": "done", "priority": "CRITICAL", "sponsor_tracks": ["0G Framework", "0G On-Chain AI"], "started": "2026-04-27T00:30:00Z", "completed": "2026-04-27T01:50:00Z", "commits": ["c933677"], "notes": "TrustNFT.sol compiles and passes 10/10 tests. tokenId sentinel fixed. Score formula fixed. Transfer lock (SBT) enforced. ERC-7857 iNFT pattern ready for 0G integration." },
-    "3": { "name": "ServiceAgreement (Escrow)", "status": "done", "priority": "CRITICAL", "sponsor_tracks": ["Uniswap", "KeeperHub"], "started": "2026-04-27T00:30:00Z", "completed": "2026-04-27T01:50:00Z", "commits": ["c933677"], "notes": "ServiceAgreement.sol compiles and passes 6/6 tests. Full lifecycle (create→accept→fulfill→settle), cancel, dispute. Settled enum added. Ready for Uniswap payment + KeeperHub execution." },
-    "4": { "name": "Deploy Script + Base Deployment", "status": "done", "priority": "HIGH", "sponsor_tracks": ["All"], "started": "2026-04-29T15:00:00Z", "completed": "2026-04-29T16:15:00Z", "commits": ["6af8a99"], "notes": "Deployed 3 contracts to Base Sepolia (chain 84532, block 40853462). AgentRegistry=0x6CE3d4bf7C7140924C6AB7579b8B86Dc9ebF7a02, ServiceAgreement=0xC9caAA6d70B8B2F73D96d7154cb8c2c97eC16bb4, TrustNFT=0x92F725c404d355645d5daf9D7ab7967f2f15A952. All 3 source-verified on Basescan. foundry-bridge.js generated deployedContracts.ts (2234 lines, full ABIs). tsc --noEmit 0 errors (31 TS errors resolved). npm run build clean. Repo sanitized: .a0proj/ removed from git tracking, added to .gitignore. Gas: 0.0000246 ETH (4.1M gas). Private key via project secrets only (never in plaintext).", "gate_required": false, "gate_passed": true },
-    "5": { "name": "Gensyn AXL Integration", "status": "pending", "priority": "CRITICAL", "sponsor_tracks": ["Gensyn ($5K)"], "started": null, "completed": null, "commits": [], "notes": "RESEARCH COMPLETE. AXL is Go binary with HTTP REST (5 endpoints). No JS/TS SDK. Need: 1) Build 2 AXL Go nodes, 2) AXLClient TS HTTP wrapper (replace node-config.ts), 3) CORS proxy (Nginx/Cloudflare), 4) ACK layer for fire-and-forget /send, 5) Integration test across nodes. Bootstrap peers: tls://34.46.48.224:9001, tls://136.111.135.206:9001. Prize: $2.5K/$1.5K/$1K. See docs/reference/gensyn-axl-deep-research.md" },
-    "6": { "name": "Agent Implementations + ENS", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["ENS", "0G"], "started": null, "completed": null, "commits": [], "notes": "Requester + Provider agent scaffolds exist. ENS setup scripts exist. Need real implementation and ENS integration." },
-    "7": { "name": "Uniswap + KeeperHub Integration", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["Uniswap", "KeeperHub"], "started": null, "completed": null, "commits": [], "notes": "Fill FEEDBACK.md as you go. SDK modules exist but untested." },
-    "8": { "name": "0G Storage + Compute + Wallet", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["0G"], "started": null, "completed": null, "commits": [], "notes": "zerog.ts SDK exists but untested. Wallet setup needed." },
-    "9": { "name": "Frontend Dashboard (SE2-Enhanced)", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["All"], "started": null, "completed": null, "commits": [], "notes": "Prerequisites: WP0 ✅ + WP4 ✅. Frontend foundation ready, contracts deployed, TS errors resolved." },
-    "10": { "name": "Demo + Submit", "status": "pending", "priority": "CRITICAL", "sponsor_tracks": ["All"], "started": null, "completed": null, "commits": [], "notes": "HUMAN GATE: submission. Demo video <4min, live deployed URL.", "gate_required": true },
-    "11": { "name": "Triple-Layer Deployment", "status": "pending", "priority": "HIGH", "sponsor_tracks": ["All"], "started": null, "completed": null, "commits": [], "notes": "Vercel + Akash + IPFS/ENS. See docs/DEPLOYMENT-STRATEGY.md" }
+    "0": {
+      "name": "SE2 Frontend Foundation + ethskills Setup",
+      "status": "done",
+      "priority": "CRITICAL",
+      "sponsor_tracks": [
+        "All"
+      ],
+      "started": "2026-04-27T02:00:00Z",
+      "completed": "2026-04-27T03:20:00Z",
+      "commits": [
+        "6f60af0"
+      ],
+      "notes": "Next.js 14 + TailwindCSS + 30 SE2 files cherry-picked."
+    },
+    "1": {
+      "name": "Foundry Setup + AgentRegistry",
+      "status": "done",
+      "priority": "CRITICAL",
+      "sponsor_tracks": [
+        "0G Framework",
+        "ENS"
+      ],
+      "started": "2026-04-27T00:30:00Z",
+      "completed": "2026-04-27T01:50:00Z",
+      "commits": [
+        "c933677"
+      ],
+      "notes": "AgentRegistry.sol compiles and tested."
+    },
+    "2": {
+      "name": "TrustNFT (ERC-7857 iNFT)",
+      "status": "done",
+      "priority": "CRITICAL",
+      "sponsor_tracks": [
+        "0G Framework",
+        "0G On-Chain AI"
+      ],
+      "started": "2026-04-27T00:30:00Z",
+      "completed": "2026-04-27T01:50:00Z",
+      "commits": [
+        "c933677"
+      ],
+      "notes": "TrustNFT.sol 10/10 tests. SBT enforced."
+    },
+    "3": {
+      "name": "ServiceAgreement (Escrow)",
+      "status": "done",
+      "priority": "CRITICAL",
+      "sponsor_tracks": [
+        "Uniswap",
+        "KeeperHub"
+      ],
+      "started": "2026-04-27T00:30:00Z",
+      "completed": "2026-04-27T01:50:00Z",
+      "commits": [
+        "c933677"
+      ],
+      "notes": "ServiceAgreement.sol 6/6 tests. Full lifecycle."
+    },
+    "4": {
+      "name": "Deploy Script + Base Deployment",
+      "status": "done",
+      "priority": "HIGH",
+      "sponsor_tracks": [
+        "All"
+      ],
+      "started": "2026-04-29T15:00:00Z",
+      "completed": "2026-04-29T16:15:00Z",
+      "commits": [
+        "6af8a99"
+      ],
+      "notes": "Deployed 3 contracts to Base Sepolia. All verified. tsc 0 errors."
+    },
+    "5": {
+      "name": "Gensyn AXL Integration",
+      "status": "done",
+      "priority": "CRITICAL",
+      "sponsor_tracks": [
+        "Gensyn ($5K)"
+      ],
+      "started": "2026-04-29T16:28:00Z",
+      "completed": "2026-04-29T17:20:00Z",
+      "commits": [
+        "8d525ca",
+        "430ee35",
+        "3109a7f"
+      ],
+      "notes": "Phase 1: Built AXL Go binary. 2 ed25519 nodes (Node A api=9002, Node B api=9012, both tcp=7000). CRITICAL: both nodes MUST use same tcp_port=7000 (gVisor virtual port). Phase 2+3: AXLClient HTTP wrapper (237 lines), ACK layer (227 lines). Phase 4: Integration test 5/5 passed. tsc clean."
+    },
+    "6": {
+      "name": "Agent Implementations + ENS",
+      "status": "pending",
+      "priority": "HIGH",
+      "sponsor_tracks": [
+        "ENS",
+        "0G"
+      ],
+      "started": null,
+      "completed": null,
+      "commits": [],
+      "notes": "Requester + Provider agent scaffolds exist. ENS setup scripts exist."
+    },
+    "7": {
+      "name": "Uniswap + KeeperHub Integration",
+      "status": "pending",
+      "priority": "HIGH",
+      "sponsor_tracks": [
+        "Uniswap",
+        "KeeperHub"
+      ],
+      "started": null,
+      "completed": null,
+      "commits": [],
+      "notes": "Fill FEEDBACK.md as you go."
+    },
+    "8": {
+      "name": "0G Storage + Compute + Wallet",
+      "status": "pending",
+      "priority": "HIGH",
+      "sponsor_tracks": [
+        "0G"
+      ],
+      "started": null,
+      "completed": null,
+      "commits": [],
+      "notes": "zerog.ts SDK exists but untested."
+    },
+    "9": {
+      "name": "Frontend Dashboard (SE2-Enhanced)",
+      "status": "pending",
+      "priority": "HIGH",
+      "sponsor_tracks": [
+        "All"
+      ],
+      "started": null,
+      "completed": null,
+      "commits": [],
+      "notes": "Prerequisites: WP0+WP4 done."
+    },
+    "10": {
+      "name": "Demo + Submit",
+      "status": "pending",
+      "priority": "CRITICAL",
+      "sponsor_tracks": [
+        "All"
+      ],
+      "started": null,
+      "completed": null,
+      "commits": [],
+      "notes": "HUMAN GATE: submission.",
+      "gate_required": true
+    },
+    "11": {
+      "name": "Triple-Layer Deployment",
+      "status": "pending",
+      "priority": "HIGH",
+      "sponsor_tracks": [
+        "All"
+      ],
+      "started": null,
+      "completed": null,
+      "commits": [],
+      "notes": "Vercel + Akash + IPFS/ENS."
+    }
   },
   "blockers": [],
   "risk_log": [
-    { "risk": "31 TS errors in SE2 files (expected)", "severity": "RESOLVED", "mitigation": "Auto-resolved after WP4 contract deployment via foundry-bridge.js" },
-    { "risk": "No ENS integration yet", "severity": "MEDIUM", "mitigation": "Workpack 6 handles this" },
-    { "risk": "AXL is Go binary — no browser SDK, needs server-side nodes + CORS proxy", "severity": "HIGH", "mitigation": "Deploy 2 AXL nodes on Akash with Nginx CORS proxy. Full research in docs/reference/gensyn-axl-deep-research.md" }
+    {
+      "risk": "31 TS errors in SE2 files (expected)",
+      "severity": "RESOLVED",
+      "mitigation": "Auto-resolved after WP4 contract deployment"
+    },
+    {
+      "risk": "No ENS integration yet",
+      "severity": "MEDIUM",
+      "mitigation": "Workpack 6 handles this"
+    },
+    {
+      "risk": "AXL Go binary needs Go 1.25.5",
+      "severity": "RESOLVED",
+      "mitigation": "GOTOOLCHAIN=auto downloads correct Go version"
+    }
   ],
   "sponsor_checklist": {
-    "0G": { "deploy_on_0g": false, "storage_used": false, "compute_used": false, "inft_implemented": true, "openclaw_referenced": false },
-    "gensyn": { "axl_primary_comm": false, "separate_nodes": false, "real_utility": false, "research_complete": true, "go_binary_confirmed": true, "cors_proxy_needed": true },
-    "ens": { "identity_mechanism": true, "records_metadata": false, "service_discovery": false, "subnames": false, "no_hardcoded": false },
-    "uniswap": { "api_swaps": false, "autonomous_settlement": false, "feedback_md": false, "real_execution": false },
-    "keeperhub": { "mcp_or_cli": false, "retry_logic": false, "gas_optimization": false, "audit_trail": false, "x402_or_mpp": false }
+    "0G": {
+      "deploy_on_0g": false,
+      "storage_used": false,
+      "compute_used": false,
+      "inft_implemented": true,
+      "openclaw_referenced": false
+    },
+    "gensyn": {
+      "axl_primary_comm": true,
+      "separate_nodes": true,
+      "real_utility": true,
+      "research_complete": true,
+      "go_binary_confirmed": true,
+      "cors_proxy_needed": true,
+      "integration_test_passed": true
+    },
+    "ens": {
+      "identity_mechanism": true,
+      "records_metadata": false,
+      "service_discovery": false,
+      "subnames": false,
+      "no_hardcoded": false
+    },
+    "uniswap": {
+      "api_swaps": false,
+      "autonomous_settlement": false,
+      "feedback_md": false,
+      "real_execution": false
+    },
+    "keeperhub": {
+      "mcp_or_cli": false,
+      "retry_logic": false,
+      "gas_optimization": false,
+      "audit_trail": false,
+      "x402_or_mpp": false
+    }
   },
   "deployment": {
     "network": "base-sepolia",
     "chain_id": 84532,
     "deployer": "0xce9B692A01D47054e9ebC15722c071cbc4BE714e",
     "contracts": {
-      "AgentRegistry": { "address": "0x6CE3d4bf7C7140924C6AB7579b8B86Dc9ebF7a02", "verified": true },
-      "ServiceAgreement": { "address": "0xC9caAA6d70B8B2F73D96d7154cb8c2c97eC16bb4", "verified": true },
-      "TrustNFT": { "address": "0x92F725c404d355645d5daf9D7ab7967f2f15A952", "verified": true }
+      "AgentRegistry": {
+        "address": "0x6CE3d4bf7C7140924C6AB7579b8B86Dc9ebF7a02",
+        "verified": true
+      },
+      "ServiceAgreement": {
+        "address": "0xC9caAA6d70B8B2F73D96d7154cb8c2c97eC16bb4",
+        "verified": true
+      },
+      "TrustNFT": {
+        "address": "0x92F725c404d355645d5daf9D7ab7967f2f15A952",
+        "verified": true
+      }
     },
     "block": 40853462,
     "gas_used": 4100685,
