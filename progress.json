@@ -3,9 +3,9 @@
   "hackathon": "ETHGlobal Open Agents 2026",
   "deadline": "2026-05-03T12:00:00-04:00",
   "repo": "https://github.com/ToXMon/agenttrust",
-  "current_workpack": 6,
+  "current_workpack": 7,
   "total_workpacks": 12,
-  "sessions_completed": 4,
+  "sessions_completed": 5,
   "last_session": "2026-04-29T17:20:00Z",
   "workpacks": {
     "0": {
@@ -115,13 +115,13 @@
     },
     "6.5": {
       "name": "Base Mainnet Deployment + Basename Integration",
-      "status": "pending",
+      "status": "done",
       "priority": "CRITICAL",
       "sponsor_tracks": ["ENS", "All"],
-      "started": null,
-      "completed": null,
-      "commits": [],
-      "notes": "PIVOT: Deploy contracts to Base Mainnet (chainId 8453). User registered agentrust.base.eth on Base Mainnet. Base Mainnet addresses: L2Resolver=0xC6d566A56A1aFf6508b41f6c90ff131615583BCD, Registry=0xb94704422c2a1e396835a571837aa5ae53285a95, RPC=https://mainnet.base.org. Must deploy AgentRegistry+TrustNFT+ServiceAgreement to mainnet, update sdk/ens.ts, set subnames and text records on agentrust.base.eth."
+      "started": "2026-04-29T20:00:00Z",
+      "completed": "2026-04-29T20:46:00Z",
+      "commits": ["649afee", "5f5cc77", "e41c584"],
+      "notes": "Security hardened 3 contracts per Etherscan feedback. Deployed to Base Mainnet (chainId 8453). AgentRegistry=0xc44cC67485A6A5AB46978752789954a8Ae845eeA, ServiceAgreement=0x109bA5eDd23c247771F2FcD7572E8334278dBE81, TrustNFT=0x0374f7516E57e778573B2e90E6D7113b8253FF5C. Added BASE_MAINNET_ENS_CONFIG to sdk/ens.ts. Updated agent ens-setup files for mainnet. forge test 24/24 pass, tsc 0 errors. Gas: 0.0000214037922 ETH total."
     },
     "7": {
       "name": "Uniswap + KeeperHub Integration",
