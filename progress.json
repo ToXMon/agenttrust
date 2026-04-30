@@ -3,10 +3,10 @@
   "hackathon": "ETHGlobal Open Agents 2026",
   "deadline": "2026-05-03T12:00:00-04:00",
   "repo": "https://github.com/ToXMon/agenttrust",
-  "current_workpack": 7,
+  "current_workpack": 8,
   "total_workpacks": 12,
-  "sessions_completed": 5,
-  "last_session": "2026-04-29T17:20:00Z",
+  "sessions_completed": 6,
+  "last_session": "2026-04-30T06:30:00Z",
   "workpacks": {
     "0": {
       "name": "SE2 Frontend Foundation + ethskills Setup",
@@ -117,10 +117,17 @@
       "name": "Base Mainnet Deployment + Basename Integration",
       "status": "done",
       "priority": "CRITICAL",
-      "sponsor_tracks": ["ENS", "All"],
+      "sponsor_tracks": [
+        "ENS",
+        "All"
+      ],
       "started": "2026-04-29T20:00:00Z",
       "completed": "2026-04-29T20:46:00Z",
-      "commits": ["649afee", "5f5cc77", "e41c584"],
+      "commits": [
+        "649afee",
+        "5f5cc77",
+        "e41c584"
+      ],
       "notes": "Security hardened 3 contracts per Etherscan feedback. Deployed to Base Mainnet (chainId 8453). AgentRegistry=0xc44cC67485A6A5AB46978752789954a8Ae845eeA, ServiceAgreement=0x109bA5eDd23c247771F2FcD7572E8334278dBE81, TrustNFT=0x0374f7516E57e778573B2e90E6D7113b8253FF5C. Added BASE_MAINNET_ENS_CONFIG to sdk/ens.ts. Updated agent ens-setup files for mainnet. forge test 24/24 pass, tsc 0 errors. Gas: 0.0000214037922 ETH total."
     },
     "7": {
@@ -142,15 +149,21 @@
     },
     "8": {
       "name": "0G Storage + Compute + Wallet",
-      "status": "pending",
+      "status": "done",
       "priority": "HIGH",
       "sponsor_tracks": [
         "0G"
       ],
-      "started": null,
-      "completed": null,
-      "commits": [],
-      "notes": "zerog.ts SDK exists but untested."
+      "started": "2026-04-30T05:00:00Z",
+      "completed": "2026-04-30T06:30:00Z",
+      "commits": [
+        "9703058",
+        "9c86bd0",
+        "99fccd2",
+        "e1c0aa5",
+        "273a9f3"
+      ],
+      "notes": "sdk/zerog.ts 609 lines (real 0G Storage+Compute with TEE), sdk/verification.ts 298 lines (AI verification), wallet/ 546 lines (viem, 6-chain). 13/13 tests pass. tsc 0 errors."
     },
     "9": {
       "name": "Frontend Dashboard (SE2-Enhanced)",
