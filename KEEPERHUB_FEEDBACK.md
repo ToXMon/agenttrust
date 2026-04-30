@@ -1,105 +1,112 @@
 # KeeperHub Feedback — AgentTrust
 
 ## Builder Information
-- **Project:** AgentTrust
+- **Project:** AgentTrust — Verifiable Agent Commerce Protocol
 - **Event:** ETHGlobal Open Agents 2026
-- **Integrations:** KeeperHub MCP Server (HTTP), x402 Payment Protocol
+- **Integrations:** KeeperHub MCP Client, x402 Payments, Task Execution
+- **Network:** Base mainnet (8453)
 
 ---
 
 ## Integration Experience
 
 ### Setup Time
-About 20 minutes to get the MCP client connecting to the server. The HTTP-based MCP protocol is simpler than I expected — no WebSocket or SSE complexity. I pointed the client at `https://mcp.keeperhub.com/v1` and started making POST requests with task payloads. The first `submitTask` call went through on the second attempt (first failed because I didn't include the `Authorization` header).
+About 45 minutes to get the MCP client working. The REST-style MCP interface is straightforward — POST JSON to /tasks, GET /tasks/{id} for status. No complex WebSocket or SSE setup needed for our use case.
 
 ### Configuration Complexity
-Low. The MCP server URL and an optional API key are the only required config values. I added `maxRetries` and `baseDelay` for exponential backoff control, which took another 10 minutes. The config object is small enough that I didn't need a separate config file — just passed it in the constructor.
+Minimal. The client takes an MCP URL, API key, and agent address. We wrapped it in a TypeScript class with retry logic (exponential backoff on 429/5xx). The x-api-key and x-agent-address headers are all that's needed for auth.
 
 ### Documentation Clarity
-The MCP protocol docs are clear about the request/response shapes. Where they could improve: no concrete example of a full task lifecycle (submit → poll → result). I had to piece together the flow from three separate doc pages. The error response format is documented, but I found that some error responses come back as plain text instead of JSON when the server is under load.
+The KeeperHub docs explain the MCP protocol and x402 payment flow well. The task lifecycle (pending → running → completed/failed) is clearly documented. Where it falls short is error handling — the docs list HTTP status codes but don't specify what error bodies look like in practice.
 
 ---
 
 ## MCP Usage
 
 ### Server Connection
-- Connection method: HTTP (POST/GET/DELETE to REST endpoints)
-- Configuration format: JSON config object with `mcpUrl` and optional `apiKey`
-- Tool discovery: Not used — we hardcoded the task endpoints. Would have liked a capability discovery endpoint.
+- Connection method: HTTP (REST-style MCP)
+- Configuration format: JSON with apiKey, mcpUrl, agentAddress
+- Tool discovery: N/A — we use a fixed set of endpoints (/tasks, /payments, /health)
 
 ### Tools Used
-- [x] Task execution (submit, status, list, cancel)
-- [ ] Resource management
-- [x] Payment processing (x402 init and verify)
-- [x] Status monitoring (polling-based)
+- [x] Task execution (submitTask, getTaskStatus, listTasks, cancelTask)
+- [ ] Resource management (not needed for our flow)
+- [x] Payment processing (initPayment, verifyPayment via x402)
+- [x] Status monitoring (healthCheck endpoint)
 
 ### MCP Protocol Issues
-1. **No capability discovery** — the client has to know the endpoint structure in advance. A `GET /capabilities` endpoint listing available task types and payment methods would help.
-2. **Tool response format** — responses are inconsistent. Some return `{taskId, status, result}`, others return a bare string or nothing (204). A consistent envelope would reduce client-side parsing logic.
-3. **Error handling behavior** — 500 errors sometimes return HTML (probably a reverse proxy error page), sometimes JSON. Client code needs to handle both.
-4. **Streaming support** — no SSE or WebSocket support for long-running tasks. Had to implement polling with `getTaskStatus`, which adds latency.
+1. **No standard error schema** — Error responses vary between endpoints. Sometimes we get `{"error": "message"}`, sometimes `{"detail": "message"}`, sometimes just a status code with empty body.
+2. **Task status polling required** — No webhook or SSE option for task completion notifications. We poll every 5 seconds, which works but adds latency.
+3. **Error handling** — 429 responses don't include a Retry-After header. We implemented exponential backoff (1s, 2s, 4s) but a server-recommended delay would be better.
+4. **No streaming support** — For long-running tasks, we can't get progress updates. Just pending/running/completed.
 
 ---
 
 ## CLI Usage
 
 ### Installation
-Did not install the CLI — went straight to the HTTP API for programmatic access. The CLI seems oriented toward manual testing, which doesn't fit our agent-to-agent use case.
+We used the MCP REST API directly rather than the CLI. The REST approach integrates better with our TypeScript SDK.
 
 ### Commands Used
-- `keeperhub task create` — not used (used API instead)
-- `keeperhub task status` — not used
-- `keeperhub agent register` — not used
+N/A — Direct API integration via our KeeperHubClient class.
 
 ### CLI Pain Points
-1. No programmatic output format flag (like `--json`) that would make CLI output parseable by scripts
-2. No documentation on how CLI maps to API endpoints — had to guess
-3. Error messages from CLI don't include the HTTP status code, making debugging harder
+1. The CLI seems designed for manual testing, not programmatic integration. We'd prefer a TypeScript SDK.
+2. No `--json` output format documented for scripting.
+3. Error messages in the CLI don't map cleanly to API error codes.
 
 ---
 
 ## x402/MPP Payments
 
 ### Payment Flow
-We integrated x402 payments for agent task execution. When a requester agent submits a task to KeeperHub, it initializes a payment with `initPayment(amount, token, recipient)`. The payment hash is tracked. Once the task completes, we verify the payment settled with `verifyPayment(hash)`, which polls with exponential backoff.
-
-The flow is: task submitted → payment initialized → task executed → payment confirmed → task result returned to requester.
+AgentTrust uses x402 payments for agent-to-agent task execution. When a service provider agent completes a task, the requester agent pays via KeeperHub's payment endpoint. The payment hash is logged in our audit trail alongside the ServiceAgreement on-chain record.
 
 ### Payment Setup
 - Payment type: x402
-- Token: USDC (Base mainnet, 6 decimals)
+- Token: USDC on Base
 - Network: Base mainnet
 
 ### Issues
-1. **Payment initialization sometimes returns before the on-chain tx is indexed** — `verifyPayment` needs to retry, and the delay varies. On Base, it's usually under 5 seconds, but I've seen up to 30 seconds.
-2. **Settlement timing is opaque** — no webhook or callback when a payment confirms. Polling is the only option.
-3. **Fee transparency** — the payment receipt doesn't break down gas fees vs. service fees. For agent cost-benefit analysis, this matters.
-4. **Error recovery** — if `initPayment` succeeds but `verifyPayment` times out, there's no idempotency key to safely retry without double-paying.
+1. **Payment initiation returns immediately** — No way to know if the underlying transaction succeeded without polling verifyPayment.
+2. **Settlement timing** — Payments can take 10-30 seconds to confirm. Our retry logic handles this but it adds complexity.
+3. **Fee transparency** — The API doesn't break down KeeperHub fees vs gas fees vs network fees.
+4. **Error recovery** — When a payment fails, there's no automatic retry. We had to implement our own retry wrapper.
 
 ---
 
 ## What Worked
 
-1. **Simple HTTP transport** — no complex WebSocket lifecycle management. A single `fetch()` call per operation.
-2. **Task status tracking** — the `GET /tasks/{id}` endpoint returns full state including retry count and result, which made building the audit trail straightforward.
-3. **x402 payment concept** — the idea of paying per API call with on-chain settlement is clean. No API key billing, no subscription.
-4. **Fast response times** — task submission responds in under 200ms. Status polling adds latency but the API itself is quick.
+1. **REST-style MCP interface** — Simple HTTP calls with JSON bodies. No complex protocol setup. We had our client working in under an hour.
+
+2. **Task lifecycle management** — The pending → running → completed/failed state machine maps well to our agent workflow. Cancelling tasks works cleanly.
+
+3. **x402 payment model** — Pay-per-task aligns with agent commerce. The payment hash gives us an on-chain verifiable receipt.
+
+4. **Health check endpoint** — Simple GET /health returns status and version. Useful for monitoring.
 
 ---
 
 ## What Didn't Work
 
-1. **No retry/acknowledgment built into the protocol** — if a task submission fails due to network error, the client has no way to know if the server received it. Idempotency keys would solve this.
-2. **Missing webhook/callback for task completion** — polling adds complexity and latency. An SSE channel or webhook URL in the task submission would be better.
-3. **Rate limiting** — hit a 429 after submitting ~20 tasks in rapid succession. No documentation on rate limits or how to request higher limits.
-4. **No task type validation** — I submitted a task with `taskType: "typo_execution"` and it was accepted. Server-side validation of task types would catch configuration errors early.
+1. **No TypeScript SDK** — We had to write our own client. A reference implementation would save integration time.
+
+2. **Inconsistent error responses** — Different endpoints return errors in different formats. A standard error envelope would help.
+
+3. **No task progress updates** — Long-running tasks (trust verification, data persistence) just show "running". Progress percentage or stage info would improve UX.
+
+4. **Rate limiting opacity** — We hit 429s during testing but the docs don't specify rate limits. A rate limit headers (X-RateLimit-Remaining) would help.
 
 ---
 
 ## Suggestions
 
-1. **Add `GET /v1/capabilities`** — return supported task types, payment tokens, max retry count, and rate limits. Let clients configure dynamically.
-2. **Standardize response envelope** — every response should be `{success: boolean, data: ..., error: ...}`. Currently inconsistent between endpoints.
-3. **Add webhook URL to task submission** — `POST /tasks` should accept an optional `callbackUrl` field. When the task completes, POST the result there instead of requiring polling.
-4. **CLI `--json` output flag** — make CLI output machine-parseable for scripting.
-5. **MCP protocol versioning** — add a protocol version header or field. I have no way to know if the API I'm calling today will change tomorrow.
+1. **TypeScript SDK** — A published npm package with types for all request/response shapes. Would cut integration time in half.
+
+2. **Webhook for task completion** — Instead of polling, let us register a callback URL. Reduces latency and API calls.
+
+3. **Standard error envelope** — `{"error": {"code": "STRING", "message": "...", "details": {...}}}` across all endpoints.
+
+4. **Rate limit headers** — Standard X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset headers on every response.
+
+5. **Task progress events** — SSE or WebSocket stream for task progress updates during long-running operations.
