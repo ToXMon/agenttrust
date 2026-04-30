@@ -125,16 +125,20 @@
     },
     "7": {
       "name": "Uniswap + KeeperHub Integration",
-      "status": "pending",
+      "status": "done",
       "priority": "HIGH",
       "sponsor_tracks": [
         "Uniswap",
         "KeeperHub"
       ],
-      "started": null,
-      "completed": null,
-      "commits": [],
-      "notes": "Fill FEEDBACK.md as you go."
+      "started": "2026-04-30T03:00:00Z",
+      "completed": "2026-04-30T04:00:00Z",
+      "commits": [
+        "5badf94",
+        "589c9c3",
+        "b106641"
+      ],
+      "notes": "sdk/uniswap.ts 582 lines (trust-gated swaps), sdk/keeperhub.ts 503 lines (MCP + x402), FEEDBACK.md + KEEPERHUB_FEEDBACK.md filled. tsc --noEmit 0 errors."
     },
     "8": {
       "name": "0G Storage + Compute + Wallet",
