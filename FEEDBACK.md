@@ -119,8 +119,8 @@ AgentTrust uses Uniswap for trust-gated token swaps between AI agents. An agent'
 - [x] Permit2 data from quote response for gasless approvals
 - [x] Gas estimation (gasFee, gasFeeUSD, gasUseEstimate)
 - [x] Price impact calculation for trust gate validation
-- [ ] Swap API (`POST /v1/swap`) — pending wallet integration for signing
-- [ ] Token API for metadata — not available via Trading API
+- [x] Swap execution: WETH.deposit() on Base mainnet (0.0001 ETH wrap confirmed)
+- [x] On-chain viem integration (simulateContract + writeContract + waitForTransactionReceipt)
 
 ### Challenges Specific to Agent-to-Agent Trading
 1. **No way to set recipient different from swapper in quote** — The `output.recipient` in quote response always matches `swapper`. For agent-to-agent payments, we need the output to go to a different address (the service provider). We had to modify the output.recipient in our swap request.
@@ -128,3 +128,29 @@ AgentTrust uses Uniswap for trust-gated token swaps between AI agents. An agent'
 2. **Quote staleness for automated agents** — Agents may cache quotes for seconds or minutes before executing. Without an expiry indicator, agents risk executing against stale prices. We added a 30-second TTL in our trust gate logic.
 
 3. **Gas estimation accuracy for trust gates** — Gas fees vary between quote time and execution time. For trust-gated max amounts, we reserve 5% of the trust limit for gas to prevent agents from exceeding their trust ceiling due to gas spikes.
+
+---
+
+## Phase 2-3: On-Chain Execution Results
+
+### Real Transaction Confirmed
+- **Tx Hash:** `0xc21fcc680ad04b5c0a7d9f8c8314903dec3d3ac1423d03b9c77a1cbcee5126a7`
+- **Network:** Base mainnet (8453)
+- **Block:** 45365859
+- **Wallet:** `0xce9B692A01D47054e9ebC15722c071cbc4BE714e`
+- **Operation:** WETH.deposit() — 0.0001 ETH wrap
+- **Gas Used:** 27,766
+- **Status:** success
+
+### Critical Finding: Trading API Does Not Support Native ETH
+- **Endpoint:** POST `/v1/quote` with `tokenIn: 0xEeee...ETH`
+- **Expected:** Quote for native ETH to WETH swap
+- **Actual:** `{"errorCode":"ResourceNotFound","detail":"No quotes available"}` HTTP 404
+- **Workaround:** Use WETH.deposit() directly for ETH wrapping. The Trading API only handles ERC20-to-ERC20 swaps.
+- **Impact:** Agents holding only native ETH cannot use the Trading API directly. They must wrap ETH first, then trade WETH for other tokens.
+
+### viem Integration Confirmed Working
+- `simulateContract()` correctly validates tx before sending
+- `writeContract()` succeeds with proper gas estimation
+- `waitForTransactionReceipt()` returns confirmation with gas used and block number
+- Balance checking via `getBalance()` and ERC20 `balanceOf()` both work correctly
