@@ -24,7 +24,8 @@
     "agents/**/*.ts",
     "sdk/**/*.ts",
     "axl/**/*.ts",
-    "demo/**/*.ts"
+    "demo/**/*.ts",
+    "wallet/**/*.ts"
   ],
   "exclude": [
     "node_modules",
