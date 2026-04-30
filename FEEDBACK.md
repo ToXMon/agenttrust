@@ -1,109 +1,130 @@
 # Uniswap API Feedback — AgentTrust
 
 ## Builder Information
-- **Project:** AgentTrust
+- **Project:** AgentTrust — Verifiable Agent Commerce Protocol
 - **Event:** ETHGlobal Open Agents 2026
-- **Integrations:** Uniswap Trading API (POST /v1/quote, POST /v1/swap), Permit2 approvals
+- **Integrations:** Uniswap Trading API (REST), Permit2, Universal Router on Base
+- **Chain:** Base (8453 mainnet, 84532 Sepolia)
+- **API Base:** `https://trade-api.gateway.uniswap.org/v1`
 
 ---
 
 ## Builder Experience
 
 ### Overall Impression
-The Trading API is a significant step up from interacting with the Universal Router directly. I was able to get a quote request working within 30 minutes of reading the docs. The POST-based API is straightforward: send `{type, amount, tokenIn, tokenOut, swapper}`, get back a structured quote with routing info, gas estimates, and permit data. That said, the gateway URL (`trade-api.gateway.uniswap.org`) differs from the docs URL I first found (`trade-api.uniswap.org`), and it took me a failed request to sort that out.
+The Trading API does what it says on the tin. POST a JSON body, get a quote back with route info, gas estimates, and Permit2 typed data ready for signing. No SDK dependency needed — plain fetch() works. That said, finding the correct endpoint was harder than it should have been.
 
 ### Time to First Working Integration
-About 45 minutes from opening the API docs to having a trust-gated quote call that correctly blocks low-score agents. The quote endpoint itself worked on the first try once I had the right base URL and API key header. The trust gate logic was custom code on our side — the API doesn't know about it.
+About 2 hours from zero to a working quote on Base mainnet. Most of that time was spent figuring out that the Trading API moved from `api.uniswap.org/v2` to `trade-api.gateway.uniswap.org/v1` and switched from GET to POST. The old endpoints return `ACCESS_DENIED` or `404` with no redirect hint.
 
 ### Documentation Quality
-The API reference at `api-docs.uniswap.org` is decent. The endpoint schemas are clear, with full request/response examples. Where it falls short: the quickstart guide doesn't mention that you need an API key in the `x-api-key` header for every request. I found that by reading the curl examples, not the prose. The swap endpoint documentation is also split across two pages ("create_protocol_swap" and the integration guide), with slightly different request body shapes between them — I had to reconcile the differences myself.
+The docs at `developers.uniswap.org` and `api-docs.uniswap.org` are thorough once you find the right pages. The code examples section shows the exact request/response shapes. But the getting-started guide still references `api.uniswap.org/v2` URLs that no longer work. There's also a split between the developer portal and the API docs site — I had to check both to piece together the full picture.
 
 ---
 
 ## What Worked
 
-1. **POST /v1/quote** returns routing, gas estimates, and permit data in a single call. No need to hit a separate gas endpoint.
-2. **Permit2 integration** — the quote response includes `permitData` with the EIP-712 typed data already structured. No manual permit message construction needed.
-3. **The curl examples** in the docs are copy-pasteable and include realistic request bodies. I used them directly to verify my API key worked before writing SDK code.
-4. **Token addresses on Base** — USDC and WETH addresses are consistent and well-documented in the Uniswap token lists.
+1. **POST /v1/quote endpoint** — Returns rich data: route details with pool addresses, tick ranges, liquidity, fee tiers. One request gives you everything needed for a swap decision. Response includes `quoteId`, `gasFeeUSD`, `priceImpact`, and typed Permit2 data.
+
+2. **Permit2 typed data in response** — The `permitData` field comes back with complete EIP-712 typed data (domain, types, values). This saved us from having to construct Permit2 messages manually. The `verifyingContract` is correctly set to `0x000000000022D473030F116dDEE9F6B43aC78BA3` on Base.
+
+3. **Base chain support** — Quotes on Base (8453) return immediately with V3 pool routing. Gas estimates are in wei with USD conversion provided. We tested 1 USDC → WETH and got `445352589161550` wei WETH (~$0.000445) with gas at ~$0.0013.
+
+4. **Route transparency** — The `route` field shows exact pool addresses, token metadata (symbol, decimals), and fee tiers. For our trust-gated logic, we use this to verify the swap goes through expected pools.
 
 ---
 
 ## What Didn't Work
 
-1. **API key acquisition flow** is unclear. I found the developer portal but the approval process wasn't documented. Had to use a trial key.
-2. **Error response format inconsistency** — a 400 error returns `{"errorCode": "...", "message": "..."}`, but a 429 returns plain text. My error handler had to account for both.
-3. **No testnet-specific documentation** — the docs show Ethereum mainnet examples. For Base Sepolia (chainId 84532), I had to guess that the same API endpoint works with the chainId in the request body. It does, but I wasn't sure until I tried.
-4. **Rate limiting behavior** — I hit a 429 after about 15 rapid-fire quote requests during testing. The retry-after header was missing, so I implemented exponential backoff on my end.
+1. **Endpoint discovery** — `https://api.uniswap.org/v2/quote` returns `ACCESS_DENIED` with no guidance. `https://trade-api.uniswap.org/v1/quote` returns 404. Only `trade-api.gateway.uniswap.org` works. Three different base URLs with no clear migration docs.
+
+2. **Missing required fields have poor errors** — When I first tested without `swapper`, the error was `"swapper" is required`. When I added that but used `amountIn` instead of `amount`, the error was `"amount" is required`. These are correct but could include the field names that *were* received to help debug typos.
+
+3. **No testnet support for Trading API** — We couldn't get quotes on Base Sepolia (84532). The API appears to only support mainnet chains. This meant we couldn't test our full flow on testnet before spending real gas.
 
 ---
 
 ## Bugs Found
 
-### Bug 1: Quote returns empty route for small amounts
-- **Endpoint:** POST https://trade-api.gateway.uniswap.org/v1/quote
-- **Expected:** Route array with at least one hop for USDC→WETH on Base
-- **Actual:** `route` field was an empty array when requesting swap of 0.001 USDC (1000 units with 6 decimals). Worked fine for 1 USDC and above.
-- **Reproduction:** Quote USDC→WETH on Base Sepolia with amount="1000", tokenIn=USDC address, tokenOut=WETH address
+### Bug 1: Old API URLs return no useful error
+- **Endpoint:** `https://api.uniswap.org/v2/quote`
+- **Expected:** 301 redirect to new endpoint, or error body with migration guidance
+- **Actual:** `{"errorCode": "ACCESS_DENIED"}` with HTTP 409. No indication this is a deprecated endpoint.
+- **Reproduction:** `curl -s 'https://api.uniswap.org/v2/quote?tokenIn=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&tokenOut=0x4200000000000000000000000000000000000006&amountIn=1000000&chainId=8453&type=exactIn'`
 
-### Bug 2: swap endpoint 400 with valid quote
-- **Endpoint:** POST https://trade-api.gateway.uniswap.org/v1/swap
-- **Expected:** 200 with swap calldata
-- **Actual:** 400 with `{"errorCode":"INVALID_QUOTE","message":"Quote expired or invalid"}` when passing the raw quote response back within 10 seconds
-- **Reproduction:** Get quote, immediately POST /swap with the quote object. Happens intermittently on Base Sepolia.
+### Bug 2: autoSlippage ignored when set to numeric string
+- **Endpoint:** POST `/v1/quote` with `autoSlippage: "2.5"`
+- **Expected:** Slippage set to 2.5%
+- **Actual:** API ignores custom slippage when passed as string; appears to always use DEFAULT. The docs say autoSlippage accepts "DEFAULT" but don't document how to set a custom value.
+- **Reproduction:** POST with `autoSlippage: "2.5"` vs `autoSlippage: "DEFAULT"` — same slippage in response.
 
 ---
 
 ## Documentation Gaps
 
-1. **API key setup** — where to get one, how long approval takes, what rate limits apply per tier
-2. **Base chain specifics** — no mention of Base Sepolia support, no example chainId values for L2s
-3. **Permit2 signature flow** — the docs show permitData in the response but don't explain the signing step clearly. Had to read the Permit2 docs separately.
-4. **Error code reference** — no exhaustive list of possible errorCode values in responses
+1. **No clear migration guide from v2 to Trading API gateway** — Developers finding old tutorials will hit `ACCESS_DENIED` with no explanation.
+
+2. **Missing swap request body schema** — The /swap endpoint requires the full quote object from /quote, but the docs don't clearly show which fields from the quote response map to the swap request. Had to figure this out from the code examples.
+
+3. **Permit2 signing flow not documented end-to-end** — The API returns Permit2 typed data, but the docs don't explain the complete flow: quote → sign Permit2 → POST /swap with signature → send calldata. Each piece is documented separately.
+
+4. **No error code reference** — Error responses include `errorCode` strings like `ACCESS_DENIED`, `RequestValidationError` but there's no comprehensive list of possible error codes.
 
 ---
 
 ## Developer Experience (DX) Friction
 
-1. **API key is required but not mentioned prominently** — first three requests failed with 401 before I found the `x-api-key` header in a curl example
-2. **Rate limiting with no headers** — 429 responses don't include Retry-After or X-RateLimit-Remaining, making graceful backoff harder
-3. **Error messages are helpful when JSON, confusing when plain text** — inconsistent error response format
-4. **No sandbox/testnet mode** — the API works on real chains, so testing small amounts costs real gas on Base Sepolia
+1. **API key required but rate limits undocumented** — The `x-api-key` header is required. We got one quickly, but the docs don't specify rate limits. During testing we got occasional 409s but couldn't tell if we were being rate-limited or hitting the deprecated endpoint.
+
+2. **Error messages are minimal** — Validation errors tell you what's missing but not what you sent. A debug mode that echoes the received body would cut integration time significantly.
+
+3. **No sandbox/testnet quotes** — For a hackathon project targeting Base, we had to use mainnet for all quote testing. Testnet quotes would reduce risk during development.
+
+4. **Response field naming inconsistency** — Quote response uses `amountOut` in route objects but `output.amount` at the top level. Gas fee appears as `gasFee`, `gasFeeUSD`, `gasFeeQuote`, and `gasUseEstimate` — four gas-related fields with unclear relationships.
 
 ---
 
 ## Missing Endpoints
 
-1. **GET /v1/token/{address}** — token metadata (decimals, symbol, name) endpoint. Currently have to hardcode or use a separate API.
-2. **Historical price data** — would be useful for showing agents what the price was when they agreed to a swap
-3. **WebSocket for quote streaming** — agent-to-agent negotiations could benefit from real-time price updates instead of polling
+1. **GET /v1/chains** — An endpoint to list supported chain IDs would help. We had to trial-and-error to confirm Base Sepolia isn't supported.
+
+2. **GET /v1/tokens?chainId=8453** — Token metadata by chain. We hardcode USDC/WETH addresses but a token list endpoint would help for dynamic pair discovery.
+
+3. **WebSocket price feeds** — For agent-to-agent trading, real-time price updates via WebSocket would be more efficient than polling /quote.
 
 ---
 
 ## Feature Wishes
 
-1. **Simulated swap endpoint** — POST /v1/simulate that does a dry-run without requiring an API key or on-chain state. Would make testing faster.
-2. **Token pair validation** — a lightweight endpoint that returns whether a pair has sufficient liquidity before attempting a full quote
-3. **Batch quotes** — request quotes for multiple pairs in one call. Agents often compare routes across 2-3 pairs.
-4. **Trust/risk metadata** — an optional field in the quote response indicating pool age, TVL, and number of liquidity providers for the route
+1. **Estimated time to expiry on quotes** — Quotes go stale but the API doesn't indicate how long a quote is valid. A `expiresAt` timestamp would help agents decide whether to re-quote before executing.
+
+2. **Simulate endpoint separate from swap** — A POST `/v1/simulate` that returns success/failure without generating calldata would let agents validate swaps before committing to the full flow.
+
+3. **Fee breakdown in quote response** — The gas fee is a single number. A breakdown (priority fee, base fee, MEV protection cost) would help agents optimize gas spending.
+
+4. **Batch quotes** — For agents comparing multiple routes, a batch quote endpoint accepting multiple token pairs would reduce API calls.
 
 ---
 
 ## Trust-Gated Swap Specifics
 
 ### Our Use Case
-We use Uniswap for trust-gated token swaps between AI agents. An agent's trust score (0-100, stored on-chain in an ERC-7857 iNFT) determines:
-- Maximum swap amount (0 USDC for scores ≤25, up to 10,000 USDC for scores 76-100)
-- Allowed token pairs (restricted to USDC→WETH at low trust, all pairs at high trust)
-- Slippage tolerance (300 BPS at low trust, 50 BPS at high trust)
+AgentTrust uses Uniswap for trust-gated token swaps between AI agents. An agent's on-chain trust score (from TrustNFT ERC-7857) determines:
+- Maximum swap amount (0-25: blocked, 26-50: 100 USDC, 51-75: 1,000 USDC, 76-100: 10,000 USDC)
+- Allowed token pairs (bronze: USDC→WETH only, silver: +USDC→ETH, gold: all pairs)
+- Slippage tolerance (bronze: 3%, silver: 1%, gold: 0.5%)
 
 ### API Features Used
-- [x] Quote API for price estimation
-- [x] Swap API for on-chain execution
-- [ ] Token API for metadata
-- [ ] Pool analytics
+- [x] Quote API (`POST /v1/quote`) for price estimation with route details
+- [x] Permit2 data from quote response for gasless approvals
+- [x] Gas estimation (gasFee, gasFeeUSD, gasUseEstimate)
+- [x] Price impact calculation for trust gate validation
+- [ ] Swap API (`POST /v1/swap`) — pending wallet integration for signing
+- [ ] Token API for metadata — not available via Trading API
 
 ### Challenges Specific to Agent-to-Agent Trading
-1. **Agents need to validate quotes independently** — can't trust the counterparty's quote. Each agent calls the Trading API directly, which adds latency.
-2. **Trust-based routing isn't native** — the API doesn't support custom routing constraints. We filter allowed pairs client-side before calling the API.
-3. **Gas estimation for automated decisions** — agents need to factor gas into their cost-benefit analysis. The API returns gas estimates, but they're in wei, requiring conversion to USD using a separate price oracle.
+1. **No way to set recipient different from swapper in quote** — The `output.recipient` in quote response always matches `swapper`. For agent-to-agent payments, we need the output to go to a different address (the service provider). We had to modify the output.recipient in our swap request.
+
+2. **Quote staleness for automated agents** — Agents may cache quotes for seconds or minutes before executing. Without an expiry indicator, agents risk executing against stale prices. We added a 30-second TTL in our trust gate logic.
+
+3. **Gas estimation accuracy for trust gates** — Gas fees vary between quote time and execution time. For trust-gated max amounts, we reserve 5% of the trust limit for gas to prevent agents from exceeding their trust ceiling due to gas spikes.
