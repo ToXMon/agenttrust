@@ -10,7 +10,7 @@
  */
 
 import { createPublicClient, http, type Hex } from "viem";
-import { baseSepolia } from "viem/chains";
+import { base } from "viem/chains";
 import { AXLClient, type ReceivedMessage } from "../../axl/axl-client.js";
 import { ACKLayer } from "../../axl/ack-layer.js";
 import {
@@ -89,8 +89,13 @@ export class ProviderAgent {
       accountAddress: "0x0000000000000000000000000000000000000000" as Hex,
       privateKey: this.config.privateKey,
     });
-    await ensSetup.registerAgentIdentity();
-    console.log(`[ProviderAgent] ENS identity registered: ${this.ensName}`);
+    try {
+      await ensSetup.registerAgentIdentity();
+      console.log(`[ProviderAgent] ENS identity registered: ${this.ensName}`);
+    } catch (err) {
+      console.warn(`[ProviderAgent] ENS registration skipped (non-fatal): ${(err as Error).message?.slice(0, 120)}`);
+      console.log(`[ProviderAgent] Continuing without ENS - AXL messaging still works`);
+    }
 
     this.running = true;
     this.axlClient.startPolling((msg) => this.handleMessage(msg), 100);
@@ -117,7 +122,10 @@ export class ProviderAgent {
       return;
     }
 
-    // Send ACK for delivery confirmation
+    // Skip ACK for ACKs to prevent flooding
+    if (msg.body.type === MessageType.MESSAGE_ACK) return;
+
+    // Send ACK for delivery confirmation (not for ACK messages)
     const ackMsg = createMessage(
       MessageType.MESSAGE_ACK,
       this.ensName,
@@ -125,7 +133,6 @@ export class ProviderAgent {
       { originalNonce: msg.body.nonce, received: true, timestamp: Date.now() },
     );
     await this.axlClient.send(msg.fromPeerId, ackMsg);
-
     switch (msg.body.type) {
       case MessageType.DISCOVER:
         await this.handleDiscover(msg.body, msg.fromPeerId);
@@ -318,7 +325,7 @@ export class ProviderAgent {
     blockCount: number = 10,
   ): Promise<OnChainAnalytics> {
     const publicClient = createPublicClient({
-      chain: baseSepolia,
+      chain: base,
       transport: http(this.config.rpcUrl),
     });
 

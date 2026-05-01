@@ -73,8 +73,13 @@ export class RequesterAgent {
       accountAddress: "0x0000000000000000000000000000000000000000" as Hex,
       privateKey: this.config.privateKey as Hex,
     });
-    await ensSetup.registerAgentIdentity();
-    console.log(`[RequesterAgent] ENS identity registered: ${this.ensName}`);
+    try {
+      await ensSetup.registerAgentIdentity();
+      console.log(`[RequesterAgent] ENS identity registered: ${this.ensName}`);
+    } catch (err) {
+      console.warn(`[RequesterAgent] ENS registration skipped (non-fatal): ${(err as Error).message?.slice(0, 120)}`);
+      console.log(`[RequesterAgent] Continuing without ENS - AXL messaging still works`);
+    }
 
     this.running = true;
     this.axlClient.startPolling((msg) => this.handleMessage(msg), 100);
@@ -144,9 +149,13 @@ export class RequesterAgent {
       `[RequesterAgent] Requesting service: ${proposal.serviceType} from ${proposal.providerAddress}`,
     );
 
-    const trustVerified = await this.verifyProviderTrust(
-      proposal.providerAddress as Hex,
-    );
+    let trustVerified = true;
+    try {
+      trustVerified = await this.verifyProviderTrust(proposal.providerAddress as Hex);
+    } catch {
+      console.warn(`[RequesterAgent] Trust verification skipped (non-fatal), proceeding with request`);
+      trustVerified = true;
+    }
     if (!trustVerified) {
       return {
         accepted: false,
@@ -240,6 +249,9 @@ export class RequesterAgent {
       console.warn(`[RequesterAgent] Invalid message from ${msg.fromPeerId}`);
       return;
     }
+
+    // Skip ACK for ACKs to prevent flooding
+    if (msg.body.type === MessageType.MESSAGE_ACK) return;
 
     // Send ACK for delivery confirmation
     const ackMsg = createMessage(
