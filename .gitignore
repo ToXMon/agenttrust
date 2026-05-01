@@ -67,3 +67,8 @@ tmp/
 *.tmp
 frontend/.next/
 node_modules/
+
+# Screenshots (build artifacts)
+screenshots/
+*.html
+!docs/reference/stripe-preview.html
