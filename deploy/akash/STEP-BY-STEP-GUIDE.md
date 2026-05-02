@@ -163,35 +163,41 @@ Same as Alpha — write down the URI.
 
 Now you have URIs for both AXL nodes. Update the frontend to connect.
 
-### 6.1 Close the Current Frontend Deployment
+### 6.1 Update the Deployment (keeps the same URI!)
 
-1. Go to your frontend deployment in Akash Console
-2. Click **"Close"** or **"Delete"** (this stops it)
+**⚠️ Do NOT close/delete your deployment.** That gives you a new URI and breaks everything (ENS records, wiring, etc.).
 
-### 6.2 Update the SDL
+Instead, use Akash's **"Update"** feature:
 
-1. Open `deploy/akash/frontend.yaml` in a text editor
-2. Find these two lines:
+1. Go to your **frontend deployment** in Akash Console
+2. Click **"Update"** (or the pencil/edit icon on your deployment)
+3. The SDL editor opens with your current YAML
+4. Find these two lines:
 ```yaml
 - AXL_NODE_A_URL=http://localhost:9002
 - AXL_NODE_B_URL=http://localhost:9012
 ```
-3. Replace with your actual Akash URIs:
+5. Replace `localhost:9002` with your **Alpha URI** and `localhost:9012` with your **Beta URI**
+
+**Example:**
 ```yaml
-- AXL_NODE_A_URL=http://YOUR_ALPHA_URI
-- AXL_NODE_B_URL=http://YOUR_BETA_URI
+- AXL_NODE_A_URL=https://abc123.provider.akashian.io
+- AXL_NODE_B_URL=https://def456.provider.akashian.io
 ```
 
-**Example:** If Alpha URI is `https://abc.provider.akashian.io`:
-```yaml
-- AXL_NODE_A_URL=https://abc.provider.akashian.io
-```
+6. Click **"Update Deployment"** or **"Accept"**
+7. Wait 1-2 minutes — the deployment restarts with the new env vars
+8. **Your URI stays exactly the same!** The container just restarts with new settings.
 
-### 6.3 Redeploy
+### 6.2 Verify
 
-1. Create a new deployment with the updated SDL
-2. Wait for Active
-3. Test: visit the frontend URL and check the Messages page
+1. Open your frontend URI (same one as before)
+2. Go to the **Messages** page
+3. You should see the AXL connection status update
+
+> **Why not close and redeploy?** Closing = new URI = you'd have to update ENS records, reconnect everything, and start over. Update = same URI, just new settings. Much easier.
+
+> **Same principle applies to ALL services:** If you ever need to change env vars, use "Update" — never close and redeploy.
 
 ---
 
