@@ -6,6 +6,7 @@
 [![Solidity 0.8.28](https://img.shields.io/badge/Solidity-0.8.28-363636.svg)](https://docs.soliditylang.org/)
 [![Base](https://img.shields.io/badge/Chain-Base-0052FF.svg)](https://base.org)
 [![ETHGlobal Open Agents](https://img.shields.io/badge/ETHGlobal-Open_Agents_2026-purple.svg)](https://ethglobal.com/events/openagents)
+[![Akash Network](https://img.shields.io/badge/Deployed-Akash_Network-FF414C.svg)](https://akash.network)
 
 > **Trust-scored agent interactions with verifiable identity, escrowed payments, and decentralized communication.**
 
@@ -33,28 +34,51 @@ AgentTrust is a full-stack protocol where:
 
 ---
 
+## 🟢 Live Deployment
+
+All 4 services are deployed on **Akash Network** and verified healthy:
+
+| Service | Live URL | DSEQ |
+|---------|----------|------|
+| **Frontend** | http://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer | 26646064 |
+| **AXL Alpha** (Requester) | http://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org | 26646067 |
+| **AXL Beta** (Provider) | http://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org | 26646070 |
+| **Orchestrator** | http://g0rqlqr8qd8qhdv51lpaqb907c.ingress.akt.engineer | 26646073 |
+
+**Docker images** (GHCR, public): `ghcr.io/toxmon/agentrust-{frontend,axl-alpha,axl-beta,orchestrator}:v0.1.0`
+
+**Smart Contracts** on Base Mainnet (chainId 8453):
+- `AgentRegistry` [`0xc44c...5eeA`](https://basescan.org/address/0xc44cC67485A6A5AB46978752789954a8Ae845eeA)
+- `ServiceAgreement` [`0x109b...BE81`](https://basescan.org/address/0x109bA5eDd23c247771F2FcD7572E8334278dBE81)
+- `TrustNFT` [`0x0374...FF5C`](https://basescan.org/address/0x0374f7516E57e778573B2e90E6D7113b8253FF5C)
+
+**ENS/Basenames** on Base Mainnet: `agentrust.base.eth` (parent)
+
+
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Frontend (Next.js)                    │
-│  Agent Dashboard │ Trust Explorer │ Audit Log │ Messages │
-└────────────┬────────────────────────────────┬───────────┘
-             │                                │
-    ┌────────▼────────┐            ┌──────────▼──────────┐
-    │  Requester Agent │◄──AXL────►│   Provider Agent    │
-    │  (ENS identity)  │           │   (ENS identity)    │
-    └────────┬─────────┘           └──────────┬──────────┘
-             │                                │
-    ┌────────▼────────────────────────────────▼──────────┐
-    │                     SDK Layer                       │
-    │  ENS │ Uniswap │ KeeperHub MCP │ 0G Storage │ Trust  │
-    └───────────────────────┬────────────────────────────┘
-                            │
-    ┌───────────────────────▼────────────────────────────┐
-    │              Base (Ethereum L2)                     │
-    │  AgentRegistry │ ServiceAgreement │ TrustNFT (7857) │
-    └────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                  Akash Network (Decentralized Cloud)          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐│
+│  │  Frontend     │  │ Orchestrator │  │  AXL Alpha │ AXL Beta││
+│  │  (Next.js)    │  │ (Demo Cron)  │  │ Requester  │ Provider││
+│  └──────┬────────┘  └──────┬───────┘  └─────┬────────┬──────┘│
+└─────────┼───────────────────┼─────────────────┼────────┘       │
+           │                   │          ┌──────▼──────┐        │
+           │                   │          │ AXL P2P     │        │
+           │                   │          │ (Gensyn)    │        │
+           │                   │          └─────────────┘        │
+     ┌─────▼───────────────────▼──────────────────────────────────┤
+     │                     SDK Layer                              │
+     │  ENS │ Uniswap │ KeeperHub MCP │ 0G Storage │ Trust        │
+     └───────────────────────┬───────────────────────────────────┘
+                             │
+     ┌───────────────────────▼────────────────────────────────────┐
+     │              Base Mainnet (Ethereum L2, chainId 8453)       │
+     │  AgentRegistry │ ServiceAgreement │ TrustNFT (ERC-7857)    │
+     │  agentrust.base.eth (ENS/Basename parent)                  │
+     └────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -90,13 +114,13 @@ AgentTrust is a full-stack protocol where:
 ## Agent System
 
 ### Requester Agent
-- Registers with ENS identity (`requester.agenttrust.eth`)
+- Registers with ENS identity (`requester.agentrust.base.eth`)
 - Discovers provider agents via AXL
 - Creates service agreements with trust thresholds
 - Releases payment on verified delivery
 
 ### Provider Agent
-- Registers with ENS identity (`provider.agenttrust.eth`)
+- Registers with ENS identity (`provider.agentrust.base.eth`)
 - Advertises capabilities via AXL
 - Executes services through KeeperHub MCP
 - Earns trust score increments on delivery
@@ -122,6 +146,8 @@ AgentTrust is a full-stack protocol where:
 - Node.js 20+
 - Foundry (for smart contracts)
 - MetaMask or compatible wallet with Base ETH
+
+> **🟢 Live Demo:** The project is deployed on Akash Network. Visit the [live frontend](http://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer) to see AgentTrust in action. The Quick Start below is for local development only.
 
 ### Setup
 
@@ -216,15 +242,39 @@ agenttrust/
 ## Tech Stack
 
 - **Smart Contracts:** Solidity 0.8.28, Foundry, OpenZeppelin
-- **Chain:** Base (Ethereum L2)
-- **Agents:** TypeScript, AXL protocol
-- **Identity:** ENS, ERC-7857 (identity NFTs)
+- **Chain:** Base Mainnet (Ethereum L2, chainId 8453)
+- **Agents:** TypeScript, AXL protocol (Gensyn)
+- **Identity:** ENS/Basenames, ERC-7857 (identity NFTs)
 - **Execution:** KeeperHub MCP, x402 payments
 - **Storage:** 0G (decentralized)
-- **Frontend:** Next.js, TypeScript, TailwindCSS
+- **Frontend:** Next.js 14, TypeScript, TailwindCSS
+- **Deployment:** Akash Network (decentralized cloud), Docker, GHCR
 - **Standards:** ERC-721, ERC-7857, MCP
 
 ---
+
+## Deployment
+
+All services run on **Akash Network** — decentralized cloud infrastructure.
+
+### Docker Images (GHCR, public)
+
+```
+ghcr.io/toxmon/agentrust-frontend:v0.1.0
+ghcr.io/toxmon/agentrust-axl-alpha:v0.1.0
+ghcr.io/toxmon/agentrust-axl-beta:v0.1.0
+ghcr.io/toxmon/agentrust-orchestrator:v0.1.0
+```
+
+### Key Learnings
+
+1. **HOSTNAME override**: K8s/Docker overrides `HOSTNAME` with the pod name. Next.js binds to that hostname instead of `0.0.0.0`. Fix: set `HOSTNAME=0.0.0.0` in the SDL `command` field.
+2. **GHCR visibility**: Default image visibility is PRIVATE. Akash providers cannot pull private images. Must set visibility to `public` via GitHub API.
+3. **Akash Console API**: The `manifest` field from deployment creation must be passed to lease creation — do NOT pass raw SDL YAML as manifest.
+4. **Update without rebuild**: Use `PUT /v1/deployments/{dseq}` to update env vars or command fields without changing the service URI.
+
+See [deploy/akash/DEPLOYED.md](deploy/akash/DEPLOYED.md) for full deployment details.
+
 
 ## AI Usage Disclosure
 
