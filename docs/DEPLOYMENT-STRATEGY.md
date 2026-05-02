@@ -1,8 +1,9 @@
 # Deployment Strategy for AgentTrust
 
-> **Purpose**: Triple-layer deployment strategy for the ETHGlobal Open Agents Hackathon demo.
+> **Purpose**: Deployment strategy for AgentTrust — now LIVE on Akash Network.
+> **Status**: All 4 services deployed and verified healthy (2026-05-02).
 > **Audience**: Autonomous agents and developers deploying AgentTrust to production.
-> **Critical**: All three layers should be deployed before demo day.
+> **Result**: Chose Akash Network as primary deployment. Vercel kept as fallback reference.
 
 ---
 
@@ -64,19 +65,41 @@ AgentTrust has **NO backend services**. Everything runs client-side in the brows
 
 | Feature | Vercel | Akash | IPFS + ENS |
 |---------|--------|-------|------------|
-| Deploy time | 5 min | 30 min | 15 min |
-| Cost | Free | $100 trial credits | Free (Fleek) |
-| Uptime | 99.99% | Trial: 24h limit | Permanent |
-| Custom domain | ✅ agenttrust.vercel.app | ✅ Custom possible | ✅ agenttrust.eth |
+| Deploy time | 30 min | 5 min | 15 min |
+| Cost | $100 trial credits | Free | Free (Fleek) |
+| Uptime | Stable (funded) | 99.99% | Permanent |
+| Custom domain | ✅ kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer | ✅ Custom possible | ✅ agenttrust.eth |
 | SSL | Auto | Auto | Via gateway |
-| Demo reliability | Highest | Medium | Low (gateway deps) |
-| Judge impression | Professional | Decentralized ✨ | Ethereum ethos ✨ |
-| Fallback for | N/A | If Vercel down | If both down |
+| Demo reliability | High (verified healthy) | Highest | Low (gateway deps) |
+| Judge impression | Decentralized ✨ | Professional | Ethereum ethos ✨ |
+| Fallback for | N/A | If Akash down | If both down |
 | Setup complexity | Trivial | Medium | Low |
 
 ---
 
-## 3. Vercel Deployment Steps
+## 2.5 Actual Deployment (Akash Network — LIVE)
+
+All 4 services deployed on 2026-05-02 via Akash Console API:
+
+| Service | URL | DSEQ | Docker Image |
+|---------|-----|------|-------------|
+| Frontend | http://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer | 26646064 | ghcr.io/toxmon/agentrust-frontend:v0.1.0 |
+| AXL Alpha | http://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org | 26646067 | ghcr.io/toxmon/agentrust-axl-alpha:v0.1.0 |
+| AXL Beta | http://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org | 26646070 | ghcr.io/toxmon/agentrust-axl-beta:v0.1.0 |
+| Orchestrator | http://g0rqlqr8qd8qhdv51lpaqb907c.ingress.akt.engineer | 26646073 | ghcr.io/toxmon/agentrust-orchestrator:v0.1.0 |
+
+Smart Contracts on Base Mainnet (chainId 8453):
+- AgentRegistry: 0xc44cC67485A6A5AB46978752789954a8Ae845eeA
+- ServiceAgreement: 0x109bA5eDd23c247771F2FcD7572E8334278dBE81
+- TrustNFT: 0x0374f7516E57e778573B2e90E6D7113b8253FF5C
+
+ENS/Basenames: agentrust.base.eth (parent on Base Mainnet)
+
+---
+
+## 3. Vercel Deployment Steps (Fallback — Not Currently Used)
+
+> **Note**: Akash Network is the primary deployment. This section is kept as fallback reference.
 
 ### Prerequisites
 
@@ -160,19 +183,19 @@ vercel domains add agenttrust.xyz
 
 ```bash
 # Check deployment
-curl -s -o /dev/null -w "%{http_code}" https://agenttrust.vercel.app
+curl -s -o /dev/null -w "%{http_code}" https://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer
 # Should return 200
 
 # Test key pages
 curl -s https://agentrust.vercel.app/debug | head -5
-curl -s https://agenttrust.vercel.app/agents | head -5
+curl -s https://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer/agents | head -5
 ```
 
 ---
 
-## 4. Akash Deployment Steps
+## 4. Akash Deployment Steps (PRIMARY — Currently Live)
 
-Akash provides decentralized cloud hosting. This layer serves as a **backup** and demonstrates decentralized infrastructure to judges.
+Akash provides decentralized cloud hosting. **This is the primary deployment layer**, chosen for its decentralized infrastructure alignment with Ethereum ethos.
 
 ### 4.1. Dockerfile for Next.js
 
@@ -523,7 +546,7 @@ Day 5: Vercel ────→ Day 6: Verify ────→ Day 7: Akash ──�
 
 ### Pre-Demo Checklist
 
-- [ ] Vercel: `https://agenttrust.vercel.app` returns 200
+- [ ] Vercel: `https://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer` returns 200
 - [ ] Vercel: Debug Contracts page loads at `/debug`
 - [ ] Vercel: Wallet connects on Base
 - [ ] Akash: Deployment URL returns 200
@@ -541,7 +564,7 @@ Day 5: Vercel ────→ Day 6: Verify ────→ Day 7: Akash ──�
 ### Primary URL for Judges
 
 ```
-https://agenttrust.vercel.app
+https://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer
 ```
 
 This is the most reliable URL. Show this first.
@@ -641,7 +664,7 @@ Keep these ready in a text file:
 
 ```
 === AGENTTRUST DEPLOYMENT URLS ===
-Primary:   https://agenttrust.vercel.app
+Primary:   https://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer
 Backup:    https://<akash-lease-url>
 Permanent: https://agenttrust.eth.limo
 IPFS:      https://cloudflare-ipfs.com/ipfs/<CID>
