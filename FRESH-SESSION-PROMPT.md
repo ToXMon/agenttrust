@@ -72,8 +72,8 @@ Basename System:
    - trustNftAddress: (from Phase 2 deployment)
 2. Update agents/*/ens-setup.ts to use agentrust.base.eth subnames
 3. Set text records on subnames:
-   - requester.agentrust.base.eth: agent.type=requester, capabilities=[...], endpoint=http://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org, status=active
-   - provider.agentrust.base.eth: agent.type=provider, capabilities=[...], endpoint=http://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org, status=active
+   - requester.agentrust.base.eth: agent.type=requester, capabilities=[...], endpoint=https://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org, status=active
+   - provider.agentrust.base.eth: agent.type=provider, capabilities=[...], endpoint=https://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org, status=active
 4. Run npx tsc --noEmit — must be 0 errors
 
 ### Phase 4: Verification

@@ -8,10 +8,10 @@
 
 | Service | URL | DSEQ | Status |
 |---------|-----|------|--------|
-| Frontend | http://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer | 26646064 | ✅ LIVE |
-| AXL Alpha (Requester) | http://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org | 26646067 | ✅ LIVE |
-| AXL Beta (Provider) | http://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org | 26646070 | ✅ LIVE |
-| Orchestrator | http://g0rqlqr8qd8qhdv51lpaqb907c.ingress.akt.engineer | 26646073 | ✅ LIVE |
+| Frontend | https://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer | 26646064 | ✅ LIVE |
+| AXL Alpha (Requester) | https://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org | 26646067 | ✅ LIVE |
+| AXL Beta (Provider) | https://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org | 26646070 | ✅ LIVE |
+| Orchestrator | https://g0rqlqr8qd8qhdv51lpaqb907c.ingress.akt.engineer | 26646073 | ✅ LIVE |
 
 **Docker images** (GHCR, public): `ghcr.io/toxmon/agentrust-{frontend,axl-alpha,axl-beta,orchestrator}:v0.1.0`
 

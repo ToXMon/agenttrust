@@ -83,10 +83,10 @@ All 4 services deployed on 2026-05-02 via Akash Console API:
 
 | Service | URL | DSEQ | Docker Image |
 |---------|-----|------|-------------|
-| Frontend | http://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer | 26646064 | ghcr.io/toxmon/agentrust-frontend:v0.1.0 |
-| AXL Alpha | http://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org | 26646067 | ghcr.io/toxmon/agentrust-axl-alpha:v0.1.0 |
-| AXL Beta | http://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org | 26646070 | ghcr.io/toxmon/agentrust-axl-beta:v0.1.0 |
-| Orchestrator | http://g0rqlqr8qd8qhdv51lpaqb907c.ingress.akt.engineer | 26646073 | ghcr.io/toxmon/agentrust-orchestrator:v0.1.0 |
+| Frontend | https://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer | 26646064 | ghcr.io/toxmon/agentrust-frontend:v0.1.0 |
+| AXL Alpha | https://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org | 26646067 | ghcr.io/toxmon/agentrust-axl-alpha:v0.1.0 |
+| AXL Beta | https://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org | 26646070 | ghcr.io/toxmon/agentrust-axl-beta:v0.1.0 |
+| Orchestrator | https://g0rqlqr8qd8qhdv51lpaqb907c.ingress.akt.engineer | 26646073 | ghcr.io/toxmon/agentrust-orchestrator:v0.1.0 |
 
 Smart Contracts on Base Mainnet (chainId 8453):
 - AgentRegistry: 0xc44cC67485A6A5AB46978752789954a8Ae845eeA

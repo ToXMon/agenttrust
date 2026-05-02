@@ -278,7 +278,7 @@ docs/reference/ethskills/            ← 6 fetched skill documents
 
 ### Why This Workpack Exists
 
-Gensyn AXL is **not a browser library or npm package** — it is a compiled Go binary that exposes 5 HTTP REST endpoints on `localhost:9002` (now deployed on Akash at `http://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org`). There is no JS/TS SDK. Our existing skeleton `axl/` files (`node-config.ts`, `message-handler.ts`, `trust-verify.ts`) assumed an in-process SDK and need restructuring into an HTTP client wrapper.
+Gensyn AXL is **not a browser library or npm package** — it is a compiled Go binary that exposes 5 HTTP REST endpoints on `localhost:9002` (now deployed on Akash at `https://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org`). There is no JS/TS SDK. Our existing skeleton `axl/` files (`node-config.ts`, `message-handler.ts`, `trust-verify.ts`) assumed an in-process SDK and need restructuring into an HTTP client wrapper.
 
 The Gensyn prize ($5K pool: $2.5K/$1.5K/$1K) requires **separate nodes with real P2P communication** — not in-process simulation. We need:
 - 2 server-side AXL Go nodes running on different ports
@@ -299,7 +299,7 @@ The Gensyn prize ($5K pool: $2.5K/$1.5K/$1K) requires **separate nodes with real
 3. Create 2 node configs (`node-a.json`, `node-b.json`):
    - **Node A:** `PrivateKeyPath`: "private-a.pem", `Peers`: ["tls://34.46.48.224:9001", "tls://136.111.135.206:9001"], `Listen`: [], `api_port`: 9002, `tcp_port`: 7000
    - **Node B:** `PrivateKeyPath`: "private-b.pem", same Peers, `api_port`: 9012, `tcp_port`: 7010
-4. Start both nodes, verify P2P via `curl http://localhost:9002/topology` (live: `curl http://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org/topology`)
+4. Start both nodes, verify P2P via `curl http://localhost:9002/topology` (live: `curl https://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org/topology`)
 5. Set up Nginx CORS reverse proxy (config in deep-research.md Appendix B)
 6. Save node configs to `axl/configs/` directory
 

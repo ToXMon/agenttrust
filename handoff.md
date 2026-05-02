@@ -24,10 +24,10 @@ Previous: WP10 (Demo + Submit) ✅ DONE
 
 | Service | Live URL | DSEQ |
 |---------|----------|------|
-| Frontend | http://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer | 26646064 |
-| AXL Alpha (Requester) | http://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org | 26646067 |
-| AXL Beta (Provider) | http://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org | 26646070 |
-| Orchestrator | http://g0rqlqr8qd8qhdv51lpaqb907c.ingress.akt.engineer | 26646073 |
+| Frontend | https://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer | 26646064 |
+| AXL Alpha (Requester) | https://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org | 26646067 |
+| AXL Beta (Provider) | https://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org | 26646070 |
+| Orchestrator | https://g0rqlqr8qd8qhdv51lpaqb907c.ingress.akt.engineer | 26646073 |
 
 **Docker images** (GHCR, public): `ghcr.io/toxmon/agentrust-{frontend,axl-alpha,axl-beta,orchestrator}:v0.1.0`
 
@@ -74,8 +74,8 @@ Previous: WP10 (Demo + Submit) ✅ DONE
 | Wallet | wallet/index.ts | 284 | Multi-chain wallet (viem-based, 6 chains) |
 
 ### AXL Nodes (Deployed on Akash)
-- Node Alpha (requester): http://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org (DSEQ 26646067)
-- Node Beta (provider): http://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org (DSEQ 26646070)
+- Node Alpha (requester): https://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org (DSEQ 26646067)
+- Node Beta (provider): https://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org (DSEQ 26646070)
 
 ### ENS/Basenames
 - Parent: agentrust.base.eth on Base Mainnet
@@ -87,7 +87,7 @@ Previous: WP10 (Demo + Submit) ✅ DONE
 - [x] AI_USAGE.md (disclose AI agent usage)
 - [x] README.md with architecture diagram + Akash deployment info
 - [ ] Demo video under 4 minutes
-- [x] Live deployed URL: http://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer
+- [x] Live deployed URL: https://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer
 
 ### Submission Deadline
 **2026-05-03 12:00 NOON ET** — HUMAN GATE REQUIRED
