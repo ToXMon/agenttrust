@@ -105,7 +105,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v5
         with:
-          context: ./frontend
+          context: .
+          file: ./deploy/akash/orchestrator.Dockerfile
           push: true
           tags: |
             ${{ env.REGISTRY }}/toxmon/agentrust-orchestrator:${{ env.VERSION }}

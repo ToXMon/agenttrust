@@ -22,6 +22,7 @@ services:
       - AXL_NODE_B_URL=http://localhost:9012
       - NODE_ENV=production
       - PORT=3000
+      - HOSTNAME=0.0.0.0
     expose:
       - port: 3000
         as: 80
