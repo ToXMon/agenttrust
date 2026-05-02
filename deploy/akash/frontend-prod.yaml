@@ -16,6 +16,8 @@ services:
       - NEXT_PUBLIC_ENS_BASENAME=agentrust.base.eth
       - NEXT_PUBLIC_BLOCK_EXPLORER=https://basescan.org
       - NODE_ENV=production
+      - AXL_NODE_A_URL=https://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org
+      - AXL_NODE_B_URL=https://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org
       - PORT=3000
     expose:
       - port: 3000
