@@ -2,19 +2,14 @@
 # Next.js 14 standalone output for minimal production image
 # Target: GHCR ghcr.io/toxmon/agentrust-frontend
 
-# ── Stage 1: Dependencies ────────────────────────────────────────
-FROM node:20-alpine AS deps
+# ── Stage 1: Build ───────────────────────────────────────────────
+FROM node:20-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json ./
-RUN npm install --production
+RUN npm install --legacy-peer-deps
 
-# ── Stage 2: Build ───────────────────────────────────────────────
-FROM node:20-alpine AS builder
-WORKDIR /app
-
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build-time environment variables (defaults, can be overridden)
@@ -39,7 +34,7 @@ ENV NEXT_PUBLIC_BLOCK_EXPLORER=$NEXT_PUBLIC_BLOCK_EXPLORER
 
 RUN npm run build
 
-# ── Stage 3: Production ─────────────────────────────────────────
+# ── Stage 2: Production ─────────────────────────────────────────
 FROM node:20-alpine AS runner
 WORKDIR /app
 
