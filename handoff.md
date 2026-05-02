@@ -1,11 +1,11 @@
-# WP10 Handoff: Demo + Submit
+# WP11 Handoff: Akash Network Deployment — COMPLETE ✅
 
-Generated: 2026-05-01
-Previous: WP9 (Frontend Dashboard — SE2-Enhanced) ✅ DONE
+Generated: 2026-05-02
+Previous: WP10 (Demo + Submit) ✅ DONE
 
 ## Current State
 
-### Completed Workpacks (9/12)
+### Completed Workpacks (11/12)
 - WP0: SE2 Frontend Foundation ✅
 - WP1-3: Smart Contracts (AgentRegistry, TrustNFT, ServiceAgreement) ✅ 24/24 forge tests
 - WP4: Deploy (Base Sepolia + Base Mainnet) ✅
@@ -15,6 +15,27 @@ Previous: WP9 (Frontend Dashboard — SE2-Enhanced) ✅ DONE
 - WP7: Uniswap + KeeperHub (uniswap.ts 582 lines, keeperhub.ts 503 lines) ✅
 - WP8: 0G Storage + Compute + Wallet ✅
 - WP9: Frontend Dashboard — 5 pages with live on-chain data, 2 API routes, 5 shared components ✅
+- WP10: Demo + Submit Preparation ✅
+- WP11: Akash Network Deployment — **ALL 4 SERVICES LIVE** ✅
+
+### WP11 Completion Summary
+**Date**: 2026-05-02
+**All 4 services deployed to Akash Network and verified healthy**
+
+| Service | Live URL | DSEQ |
+|---------|----------|------|
+| Frontend | http://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer | 26646064 |
+| AXL Alpha (Requester) | http://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org | 26646067 |
+| AXL Beta (Provider) | http://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org | 26646070 |
+| Orchestrator | http://g0rqlqr8qd8qhdv51lpaqb907c.ingress.akt.engineer | 26646073 |
+
+**Docker images** (GHCR, public): `ghcr.io/toxmon/agentrust-{frontend,axl-alpha,axl-beta,orchestrator}:v0.1.0`
+
+**Key Learnings**:
+1. HOSTNAME override: K8s sets HOSTNAME to pod name, Next.js binds to that instead of 0.0.0.0. Fix: SDL command `HOSTNAME=0.0.0.0 exec node server.js`
+2. GHCR visibility: Default is PRIVATE, Akash providers can't pull. Must set public via GitHub API.
+3. Akash Console API manifest field must come from deployment creation response, NOT raw SDL YAML.
+4. PUT /v1/deployments/{dseq} preserves URIs while updating container config.
 
 ### WP9 Completion Summary
 **Commit**: `6e31e09`
@@ -52,35 +73,21 @@ Previous: WP9 (Frontend Dashboard — SE2-Enhanced) ✅ DONE
 | AI Verification | sdk/verification.ts | 298 | Service result verification via 0G Compute |
 | Wallet | wallet/index.ts | 284 | Multi-chain wallet (viem-based, 6 chains) |
 
-### AXL Nodes
-- Node A (requester): api=9002, tcp=7000
-- Node B (provider): api=9012, tcp=7000
+### AXL Nodes (Deployed on Akash)
+- Node Alpha (requester): http://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org (DSEQ 26646067)
+- Node Beta (provider): http://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org (DSEQ 26646070)
 
-## WP10: Demo + Submit
+### ENS/Basenames
+- Parent: agentrust.base.eth on Base Mainnet
+- Subnames: requester.agentrust.base.eth, provider.agentrust.base.eth, explorer.agentrust.base.eth
 
-### Prerequisites
-- [x] All smart contracts deployed on Base Mainnet
-- [x] SDK modules complete (ENS, Uniswap, KeeperHub, 0G, Trust, Wallet)
-- [x] Frontend dashboard with 5 pages + 2 API routes
-- [ ] Seed on-chain data via demo/scenario.ts
-- [ ] Start AXL nodes for live P2P demo
-- [ ] Fix audit page error banner
-- [ ] Deploy frontend to live URL
-
-### Demo Checklist
-1. **Seed on-chain data**: Run `demo/scenario.ts` to register 2 agents + create agreement
-2. **Start AXL nodes**: Run `./axl/start.sh` for live P2P messages
-3. **Deploy frontend**: Push to Vercel or Cloudflare Pages
-4. **Connect wallet**: Use MetaMask on Base Mainnet
-5. **Record demo video**: 4 minutes max, walk through all 5 pages
-
-### Mandatory Deliverables
-- [ ] FEEDBACK.md (Uniswap — already filled)
-- [ ] KEEPERHUB_FEEDBACK.md (already filled)
-- [ ] AI_USAGE.md (disclose AI agent usage)
-- [ ] README.md with architecture diagram
+## Mandatory Deliverables
+- [x] FEEDBACK.md (Uniswap — already filled)
+- [x] KEEPERHUB_FEEDBACK.md (already filled)
+- [x] AI_USAGE.md (disclose AI agent usage)
+- [x] README.md with architecture diagram + Akash deployment info
 - [ ] Demo video under 4 minutes
-- [ ] Live deployed URL
+- [x] Live deployed URL: http://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer
 
 ### Submission Deadline
 **2026-05-03 12:00 NOON ET** — HUMAN GATE REQUIRED
@@ -88,4 +95,3 @@ Previous: WP9 (Frontend Dashboard — SE2-Enhanced) ✅ DONE
 ## Known Issues
 - Audit page shows red "1 error" notification banner — needs debugging
 - All pages show 0 stats until on-chain data is seeded
-- AXL nodes must be started manually for live messages
