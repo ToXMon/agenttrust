@@ -29,9 +29,9 @@ dotenv.config({ path: ".env" });
 dotenv.config({ path: "contracts/.env" });
 
 // ─── Contract Addresses (Base Mainnet 8453) ─────────────────────
-const AGENT_REGISTRY  = "0xc44cc67485a6a5ab46978752789954a8ae845eea" as `0x${string}`;
-const TRUST_NFT       = "0x0374f7516e57e778573b2e90e6d7113b8253ff5c" as `0x${string}`;
-const SERVICE_AGREEMENT = "0x109ba5edd23c247771f2fcd7572e8334278dbe81" as `0x${string}`;
+const AGENT_REGISTRY  = "0xb7Bb2dbaEA5FBBb400D605d3A8a65871A72eCF27" as `0x${string}`;
+const TRUST_NFT       = "0xF556e73320EE6F0E4862C867C75dA0b2bB0116A1" as `0x${string}`;
+const SERVICE_AGREEMENT = "0x9c21A5E1Cf7E6200c38F262449E0A78626257F41" as `0x${string}`;
 const WETH_BASE       = "0x4200000000000000000000000000000000000006" as `0x${string}`;
 
 // Dummy provider address (must differ from msg.sender)
