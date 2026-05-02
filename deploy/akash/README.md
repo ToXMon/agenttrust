@@ -1,14 +1,17 @@
 # Akash Deployment for AgentTrust
 
+> **🟢 All services are LIVE.** See [DEPLOYED.md](./DEPLOYED.md) for live endpoints, deployment IDs, and smoke test results.
+
 ## Overview
 
-AgentTrust uses 3 Akash containers for decentralized agent compute:
+AgentTrust uses 4 Akash containers for decentralized agent compute:
 
 | Container | SDL File | Resources | Purpose |
 |-----------|----------|-----------|--------|
-| **Orchestrator** | `orchestrator.yaml` | 2 CPU, 4Gi RAM, 10Gi storage | Agent orchestrator + cron demo scheduler |
-| **AXL Node Alpha** | `axl-node-alpha.yaml` | 1 CPU, 2Gi RAM, 5Gi storage | Researcher agent (Gensyn AXL Node 1) |
-| **AXL Node Beta** | `axl-node-beta.yaml` | 1 CPU, 2Gi RAM, 5Gi storage | Provider agent (Gensyn AXL Node 2) |
+| **Frontend** | `frontend-prod.yaml` | 1 CPU, 2Gi RAM, 5Gi storage | Next.js 14 dashboard (static export) |
+| **Orchestrator** | `orchestrator-prod.yaml` | 2 CPU, 4Gi RAM, 10Gi storage | Agent orchestrator + cron demo scheduler |
+| **AXL Node Alpha** | `axl-alpha-prod.yaml` | 1 CPU, 2Gi RAM, 5Gi storage | Researcher agent (Gensyn AXL Node 1) |
+| **AXL Node Beta** | `axl-beta-prod.yaml` | 1 CPU, 2Gi RAM, 5Gi storage | Provider agent (Gensyn AXL Node 2) |
 
 ## Why Akash?
 
@@ -79,6 +82,7 @@ Point custom domains to Akash endpoints:
 
 | Subdomain | Target | Purpose |
 |-----------|--------|--------|
+| `agentrust.xyz` | Akash Frontend URI | AgentTrust dashboard |
 | `orchestrator.agenttrust.xyz` | Akash Orchestrator URI | Agent coordination API |
 | `axl-alpha.agenttrust.xyz` | Akash AXL Alpha URI | Researcher AXL node |
 | `axl-beta.agenttrust.xyz` | Akash AXL Beta URI | Provider AXL node |
@@ -93,11 +97,11 @@ Point custom domains to Akash endpoints:
 
 | Item | Cost |
 |------|------|
-| 3 Akash containers (estimated) | ~$5-15/day |
-| With $100 trial credits | **$0** (covers full hackathon week) |
+| 4 Akash containers (estimated) | ~$5-15/day |
+| With funded wallet (AKT) | Covers full hackathon week |
 | Cloudflare CNAME | $0 |
-| Custom domain (agenttrust.xyz) | ~$10/year |
-| **Total for hackathon** | **~$0** |
+| Custom domain (agentrust.xyz) | ~$10/year |
+| **Total for hackathon** | **~$0-15** |
 
 ## Troubleshooting
 
