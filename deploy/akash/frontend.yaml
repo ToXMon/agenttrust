@@ -1,0 +1,52 @@
+# ── AgentTrust Frontend ── Akash SDL ──────────────────────────
+# Next.js 14 standalone on Base Mainnet
+# Image: ghcr.io/toxmon/agentrust-frontend:v0.1.0
+#
+# UPDATE AFTER DEPLOY: Set AXL_NODE_A/B URLs to deployed AXL node URIs
+
+version: "2.0"
+
+services:
+  frontend:
+    image: ghcr.io/toxmon/agentrust-frontend:v0.1.0
+    env:
+      - NEXT_PUBLIC_CHAIN_ID=8453
+      - NEXT_PUBLIC_RPC_URL=https://mainnet.base.org
+      - NEXT_PUBLIC_AGENT_REGISTRY=0xc44cC67485A6A5AB46978752789954a8Ae845eeA
+      - NEXT_PUBLIC_SERVICE_AGREEMENT=0x109bA5eDd23c247771F2FcD7572E8334278dBE81
+      - NEXT_PUBLIC_TRUST_NFT=0x0374f7516E57e778573B2e90E6D7113b8253FF5C
+      - NEXT_PUBLIC_ENS_BASENAME=agentrust.base.eth
+      - NEXT_PUBLIC_BLOCK_EXPLORER=https://basescan.org
+      # UPDATE: Point to deployed AXL node URIs after Akash deploy
+      - AXL_NODE_A_URL=http://localhost:9002
+      - AXL_NODE_B_URL=http://localhost:9012
+      - NODE_ENV=production
+      - PORT=3000
+    expose:
+      - port: 3000
+        as: 80
+        to:
+          - global: true
+
+profiles:
+  compute:
+    frontend:
+      resources:
+        cpu:
+          units: 0.5
+        memory:
+          size: 1Gi
+        storage:
+          size: 5Gi
+  placement:
+    dcloud:
+      pricing:
+        frontend:
+          denom: uact
+          amount: 1000
+
+deployment:
+  frontend:
+    dcloud:
+      profile: frontend
+      count: 1

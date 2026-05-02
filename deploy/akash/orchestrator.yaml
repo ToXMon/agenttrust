@@ -1,0 +1,54 @@
+# ── AgentTrust Orchestrator ── Akash SDL ──────────────────────────
+# Agent coordination, cron demo scheduler, connects to both AXL nodes
+# Image: ghcr.io/toxmon/agentrust-orchestrator:v0.1.0
+#
+# UPDATE AFTER DEPLOY:
+#   1. Set AXL_ALPHA_URL to Node Alpha's Akash URI
+#   2. Set AXL_BETA_URL to Node Beta's Akash URI
+#   3. Set RPC_URL and contract addresses if needed
+
+version: "2.0"
+
+services:
+  orchestrator:
+    image: ghcr.io/toxmon/agentrust-orchestrator:v0.1.0
+    env:
+      - RPC_URL=https://mainnet.base.org
+      - CHAIN_ID=8453
+      - AGENT_REGISTRY=0xc44cC67485A6A5AB46978752789954a8Ae845eeA
+      - SERVICE_AGREEMENT=0x109bA5eDd23c247771F2FcD7572E8334278dBE81
+      - TRUST_NFT=0x0374f7516E57e778573B2e90E6D7113b8253FF5C
+      - ENS_BASENAME=agentrust.base.eth
+      # UPDATE: Point to deployed AXL node URIs after Akash deploy
+      - AXL_ALPHA_URL=http://localhost:9002
+      - AXL_BETA_URL=http://localhost:9012
+    expose:
+      - port: 3001
+        as: 80
+        to:
+          - global: true
+        accept:
+          - orchestrator.agentrust.xyz
+
+profiles:
+  compute:
+    orchestrator:
+      resources:
+        cpu:
+          units: 2
+        memory:
+          size: 4Gi
+        storage:
+          size: 10Gi
+  placement:
+    dcloud:
+      pricing:
+        orchestrator:
+          denom: uact
+          amount: 1000
+
+deployment:
+  orchestrator:
+    dcloud:
+      profile: orchestrator
+      count: 1

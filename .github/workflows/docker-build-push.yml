@@ -1,0 +1,117 @@
+name: Build & Push Docker Images to GHCR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'axl/**'
+      - 'deploy/akash/**'
+      - '.github/workflows/docker-build-push.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Image tag version'
+        required: false
+        default: 'v0.1.0'
+
+env:
+  REGISTRY: ghcr.io
+  VERSION: ${{ github.event.inputs.version || 'v0.1.0' }}
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/toxmon/agentrust-frontend:${{ env.VERSION }}
+            ${{ env.REGISTRY }}/toxmon/agentrust-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-axl-alpha:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./deploy/akash/axl-node.Dockerfile
+          build-args: CONFIG_FILE=configs/node-a.json
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/toxmon/agentrust-axl-alpha:${{ env.VERSION }}
+            ${{ env.REGISTRY }}/toxmon/agentrust-axl-alpha:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-axl-beta:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./deploy/akash/axl-node.Dockerfile
+          build-args: CONFIG_FILE=configs/node-b.json
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/toxmon/agentrust-axl-beta:${{ env.VERSION }}
+            ${{ env.REGISTRY }}/toxmon/agentrust-axl-beta:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-orchestrator:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/toxmon/agentrust-orchestrator:${{ env.VERSION }}
+            ${{ env.REGISTRY }}/toxmon/agentrust-orchestrator:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

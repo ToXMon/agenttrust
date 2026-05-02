@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   reactStrictMode: true,
   // SE2 cherry-picked files have type inference errors from empty deployedContracts
   // These auto-resolve when contracts are deployed. Safe to ignore for hackathon.

@@ -1,0 +1,51 @@
+# ── AgentTrust AXL Node Alpha (Requester) ── Akash SDL ──────────
+# Gensyn AXL P2P node — researcher agent
+# Image: ghcr.io/toxmon/agentrust-axl-alpha:v0.1.0
+#
+# UPDATE AFTER DEPLOY:
+#   1. Replace PEER_B_URI with Node Beta's Akash URI in Peers list
+#   2. Note this node's URI for Node Beta's config
+
+version: "2.0"
+
+services:
+  axl-alpha:
+    image: ghcr.io/toxmon/agentrust-axl-alpha:v0.1.0
+    env:
+      - CONFIG_FILE=configs/node-a.json
+    # Override the config at runtime to set production peers
+    # After Node Beta deploys, rebuild with updated peers
+    expose:
+      - port: 9002
+        as: 80
+        to:
+          - global: true
+        accept:
+          - axl-alpha.agentrust.xyz
+      - port: 7000
+        as: 7000
+        to:
+          - global: true
+
+profiles:
+  compute:
+    axl-alpha:
+      resources:
+        cpu:
+          units: 1
+        memory:
+          size: 2Gi
+        storage:
+          size: 5Gi
+  placement:
+    dcloud:
+      pricing:
+        axl-alpha:
+          denom: uact
+          amount: 1000
+
+deployment:
+  axl-alpha:
+    dcloud:
+      profile: axl-alpha
+      count: 1
