@@ -5,17 +5,14 @@
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl wget && \
+    ca-certificates curl && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Download Gensyn AXL binary from the collaborative-autoresearch-demo repo
-# The binary is ~17MB x86_64 ELF
-RUN wget -q -O /app/axl-node \
-    "https://github.com/gensyn-ai/collaborative-autoresearch-demo/releases/download/v0.1.0/axl-node-x86_64" \
-    || echo "Binary download failed - using placeholder" && \
-    chmod +x /app/axl-node || true
+# Copy AXL binary (force-included in git)
+COPY axl/node /app/axl-node
+RUN chmod +x /app/axl-node
 
 # Copy configs and keys
 COPY axl/configs/ /app/configs/
