@@ -1,7 +1,20 @@
 # AgentTrust — Live Deployment Architecture
 
 > ETHGlobal Hackathon Judging Demo
-> Target: 3-day live deployment under $50
+> **LIVE on Akash Network since 2026-05-02**
+> Originally planned for Vercel/Railway — now fully deployed on decentralized infrastructure
+
+## Live Endpoints
+
+| Service | URL | DSEQ | Status |
+|---------|-----|------|--------|
+| Frontend | http://kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer | 26646064 | ✅ LIVE |
+| AXL Alpha (Requester) | http://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org | 26646067 | ✅ LIVE |
+| AXL Beta (Provider) | http://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org | 26646070 | ✅ LIVE |
+| Orchestrator | http://g0rqlqr8qd8qhdv51lpaqb907c.ingress.akt.engineer | 26646073 | ✅ LIVE |
+
+**Docker images** (GHCR, public): `ghcr.io/toxmon/agentrust-{frontend,axl-alpha,axl-beta,orchestrator}:v0.1.0`
+
 
 ## Table of Contents
 
@@ -32,7 +45,7 @@
           │ SSE stream       │ GET /api/...          │ POST /api/demo
           ▼                 ▼                       ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                     VERCEL (Next.js 14)                          │
+│                     AKASH NETWORK (Next.js 14)                          │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │  /app/api/                                                │   │
 │  │    api/activity/stream  → SSE endpoint (activity feed)   │   │
@@ -44,13 +57,13 @@
 │  │    api/interactions     → GET: recent interaction history│   │
 │  └──────────────────────────────────────────────────────────┘   │
 │                         │ reads/writes                         │
-│                    Vercel KV (Redis)                             │
+│                    Orchestrator state (Redis)                             │
 │              activity-feed | demo-runs | agent-cache             │
 └─────────────────────────┬───────────────────────────────────────┘
-                          │ HTTP callback (Railway → Vercel KV)
+                          │ HTTP callback (Akash → Orchestrator state)
                           ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                  RAILWAY (Node.js Worker)                        │
+│                  AKASH NETWORK (Orchestrator Container)                        │
 │                                                                  │
 │  ┌─────────────────┐    ┌──────────────────────────────────────┐│
 │  │ Auto-Demo       │    │  Demo Orchestrator                   ││
@@ -66,19 +79,20 @@
 │                         └──────────────┬───────────────────────┘│
 │                                        │                        │
 │  ┌─────────────────────────────────────┘                        │
-│  │ After each step: push result to Vercel KV                   │
+│  │ After each step: push result to Orchestrator state                   │
 │  │ Activity feed consumers pick up via SSE                     │
 │  └─────────────────────────────────────────────────────────────┘│
 └──────────────────────────────────────────────────────────────────┘
                           │
                           ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                      BASE SEPOLIA (L2)                           │
+│                      BASE MAINNET (L2)                           │
 │                                                                  │
-│  AgentRegistry.sol    TrustNFT.sol        ServiceAgreement.sol   │
+│  AgentRegistry.sol    TrustNFT.sol        ServiceAgreement.sol
+  0xc44c...5eeA         0x0374...FF5C       0x109b...BE81   │
 │  (ERC-721 identity)   (Soulbound 0-100)   (Escrow state machine)│
 │                                                                  │
-│  Basescan: https://sepolia.basescan.org/tx/{hash}               │
+│  Basescan: https://basescan.org/tx/{hash}               │
 └──────────────────────────────────────────────────────────────────┘
 
 External Services:
@@ -86,7 +100,7 @@ External Services:
   KeeperHub   ←→ MCP task execution
   0G Storage  ←→ output hash verification
   Uniswap v4  ←→ payment settlement swap
-  ENS         ←→ agenttrust.eth subnames
+  ENS         ←→ agentrust.base.eth subnames
 ```
 
 ---
@@ -123,12 +137,12 @@ frontend/app/api/
 | `/api/demo/status?runId=xxx` | GET | Current step, tx hashes, timestamps | < 100ms |
 | `/api/agents` | GET | Cached list of registered agents | < 100ms |
 | `/api/trust/[address]` | GET | On-chain trust score (cached 30s) | < 500ms |
-| `/api/tx/[hash]` | GET | Tx status from Base Sepolia RPC | < 1s |
+| `/api/tx/[hash]` | GET | Tx status from Base Mainnet RPC | < 1s |
 | `/api/interactions` | GET | Last 50 interactions from KV store | < 100ms |
 
 ### 2.2 Agent Worker Process
 
-The worker runs on Railway as a single long-running Node.js process:
+The worker runs on Akash as a single long-running Node.js process:
 
 ```
 worker/
@@ -144,20 +158,20 @@ worker/
 │   │   ├── 5-execute.ts      # KeeperHub MCP task dispatch
 │   │   ├── 6-verify.ts       # Upload to 0G, get hash
 │   │   └── 7-settle.ts       # Uniswap swap, release payment
-│   ├── state.ts              # Write step results to Vercel KV
+│   ├── state.ts              # Write step results to Orchestrator state
 │   └── wallet.ts             # Funded wallets for demo agents
 ├── package.json
 └── tsconfig.json
 ```
 
-The worker does **not** run inside Vercel. It's a separate deployment on Railway because:
+The worker does **not** run inside Vercel. It's a separate deployment on Akash because:
 - Demo runs take 30-90 seconds (exceeds Vercel's 10s serverless limit on hobby)
 - Needs persistent state for AXL P2P connections
 - Cron scheduling requires a long-running process
 
 ### 2.3 Job Queue
 
-Hackathon-grade: no RabbitMQ, no BullMQ. Use a simple flag in Vercel KV.
+Hackathon-grade: no RabbitMQ, no BullMQ. Use a simple flag in Orchestrator state.
 
 ```
 KV key: "demo:current-run"
@@ -175,7 +189,7 @@ When a judge hits "Run Demo":
 
 ### 2.4 State Management
 
-All state lives in **Vercel KV** (Redis under the hood, free tier: 30K commands/month):
+All state lives in **Orchestrator state** (Redis under the hood, free tier: 30K commands/month):
 
 | Key Pattern | Data | TTL |
 |-------------|------|-----|
@@ -285,7 +299,7 @@ When a step produces a tx hash:
 2. Frontend shows "Pending..." with a spinner
 3. Polls `/api/tx/{hash}` every 3 seconds
 4. On confirmation: spinner → green checkmark + Basescan link
-5. Typical Base Sepolia confirmation: 2-5 seconds
+5. Typical Base Mainnet confirmation: 2-5 seconds
 
 ---
 
@@ -300,9 +314,9 @@ worker/src/scheduler.ts
 
 const DEMO_INTERVAL_MS = 4 * 60 * 1000;  // 4 minutes
 const AGENT_PAIRS = [
-  { requester: "agent-alpha.agenttrust.eth", provider: "agent-beta.agenttrust.eth" },
-  { requester: "agent-gamma.agenttrust.eth", provider: "agent-delta.agenttrust.eth" },
-  { requester: "agent-epsilon.agenttrust.eth", provider: "agent-zeta.agenttrust.eth" },
+  { requester: "requester.agentrust.base.eth", provider: "provider.agentrust.base.eth" },
+  { requester: "explorer.agentrust.base.eth", provider: "provider.agentrust.base.eth" },
+  { requester: "requester.agentrust.base.eth", provider: "provider.agentrust.base.eth" },
 ];
 
 // Rotates through pairs so each run looks different
@@ -319,7 +333,7 @@ setInterval(async () => {
 - Full 7-step flow takes 30-90 seconds
 - 4-minute interval gives ~2.5 minutes of idle time (feed stays populated)
 - Over 3 days: ~1,080 auto-demo runs
-- Base Sepolia gas is free, so no cost concern
+- Base Mainnet gas is free, so no cost concern
 
 ### 4.2 Demo Variations
 
@@ -377,7 +391,7 @@ POST /api/demo/trigger
               ▼
     Summary card appears:
       "Your demo completed in 47 seconds.
-       7 transactions on Base Sepolia.
+       7 transactions on Base Mainnet.
        Trust scores: Alpha 50→52, Beta 50→51."
 ```
 
@@ -402,15 +416,15 @@ If a step fails:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    RAILWAY WORKER                   │
+│                    AKASH ORCHESTRATOR                   │
 │                                                     │
 │  orchestrator.ts executes each step:                │
-│    1. Sends tx to Base Sepolia                      │
+│    1. Sends tx to Base Mainnet                      │
 │    2. Waits for tx receipt (poll RPC, 2s interval)  │
 │    3. Reads on-chain events from receipt logs       │
 │    4. Compiles step result:                         │
 │       { step, stepName, txHash, events, timestamp } │
-│    5. Pushes to Vercel KV:                          │
+│    5. Pushes to Orchestrator state:                          │
 │       - Append to activity:feed (LPUSH + LTRIM 50)  │
 │       - Update demo:current-run                     │
 │       - Update agent:{addr} if trust changed         │
@@ -420,7 +434,7 @@ If a step fails:
                        │ writes
                        ▼
 ┌─────────────────────────────────────────────────────┐
-│                   VERCEL KV                          │
+│                   AKASH NETWORK KV                          │
 │                                                     │
 │  activity:feed  →  [{id, type, data, ts}, ...]      │
 │  demo:current   →  {runId, step, status, ...}       │
@@ -429,7 +443,7 @@ If a step fails:
                        │ reads
                        ▼
 ┌─────────────────────────────────────────────────────┐
-│              VERCEL NEXT.JS (API ROUTES)             │
+│              AKASH NETWORK NEXT.JS (API ROUTES)             │
 │                                                     │
 │  SSE endpoint polls KV every 500ms:                 │
 │    - Compare latest event ID vs last sent           │
@@ -452,7 +466,7 @@ If a step fails:
 
 The worker detects on-chain events by:
 
-1. **Transaction receipts** — After sending each tx, poll the Base Sepolia RPC for receipt. Parse logs for contract-specific events.
+1. **Transaction receipts** — After sending each tx, poll the Base Mainnet RPC for receipt. Parse logs for contract-specific events.
 2. **Trust score changes** — After step 6 (VERIFY), call `TrustNFT.getTrustScore(agentAddress)` directly via eth_call.
 3. **No event listener needed** — We don't use `eth_subscribe` because the worker itself triggers every tx. It already knows when things happen.
 
@@ -465,7 +479,7 @@ This is simpler than running a full event indexer. The worker is the sole produc
 | Activity feed | Worker writes to KV | No cache (SSE reads KV directly) | On new event |
 | Agent list | KV cache | 30s TTL | After register step |
 | Trust scores | On-chain read → KV | 30s TTL | After verify step |
-| Tx status | Base Sepolia RPC → KV | 5s TTL | After receipt confirmed |
+| Tx status | Base Mainnet RPC → KV | 5s TTL | After receipt confirmed |
 | Demo status | KV | No cache | On step completion |
 
 ---
@@ -476,32 +490,32 @@ This is simpler than running a full event indexer. The worker is the sole produc
 
 ```
 ┌─────────────────────────────────────────────┐
-│              VERCEL (Free Hobby)             │
+│              AKASH NETWORK (Decentralized Cloud)             │
 │                                             │
 │  frontend/  (Next.js 14 app)                │
 │  - Static pages                             │
 │  - API routes (serverless functions)        │
 │  - SSE streaming                            │
-│  - Vercel KV integration                    │
+│  - Orchestrator state integration                    │
 │                                             │
-│  Domain: agenttrust.vercel.app              │
+│  Domain: kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer              │
 └─────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────┐
-│           RAILWAY (Starter Plan)             │
+│           AKASH NETWORK (Orchestrator Container)             │
 │                                             │
 │  worker/  (Node.js process)                 │
 │  - Auto-demo scheduler                      │
 │  - Demo orchestrator (7-step flow)          │
 │  - AXL P2P node connections                 │
-│  - Writes to Vercel KV                      │
+│  - Writes to Orchestrator state                      │
 │                                             │
 │  $5/month, billed per usage                 │
 │  3 days ≈ $0.50                             │
 └─────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────┐
-│           BASE SEPOLIA (Free)                │
+│           BASE MAINNET (Free)                │
 │                                             │
 │  Smart Contracts:                           │
 │  - AgentRegistry.sol                        │
@@ -516,17 +530,17 @@ This is simpler than running a full event indexer. The worker is the sole produc
 
 ```bash
 # Vercel (frontend + API routes)
-KV_REST_API_URL=          # Vercel KV REST URL (auto-configured)
-KV_REST_API_TOKEN=        # Vercel KV token (auto-configured)
-BASE_SEPOLIA_RPC_URL=     # https://sepolia.base.org
+KV_REST_API_URL=          # Orchestrator state REST URL (auto-configured)
+KV_REST_API_TOKEN=        # Orchestrator state token (auto-configured)
+BASE_SEPOLIA_RPC_URL=     # https://mainnet.base.org
 CONTRACT_REGISTRY=        # 0x... deployed AgentRegistry address
 CONTRACT_TRUST_NFT=       # 0x... deployed TrustNFT address
 CONTRACT_SERVICE_AGREEMENT= # 0x... deployed ServiceAgreement address
-AGENTTRUST_ENS_DOMAIN=    # agenttrust.eth
+AGENTTRUST_ENS_DOMAIN=    # agentrust.base.eth
 WORKER_URL=               # https://agenttrust-worker.up.railway.app
 
-# Railway (worker)
-KV_REST_API_URL=          # Same Vercel KV credentials
+# Akash (worker)
+KV_REST_API_URL=          # Same Orchestrator state credentials
 KV_REST_API_TOKEN=
 BASE_SEPOLIA_RPC_URL=
 CONTRACT_REGISTRY=
@@ -536,10 +550,10 @@ AGENT_PRIVATE_KEYS=       # JSON array of funded private keys for demo agents
 KEEPERHUB_MCP_URL=        # KeeperHub MCP endpoint
 ZEROG_STORAGE_URL=        # 0G Storage API endpoint
 AXL_NODE_CONFIG=          # JSON: AXL peer addresses and keys
-UNISWAP_V4_ROUTER=        # Uniswap v4 router address on Base Sepolia
+UNISWAP_V4_ROUTER=        # Uniswap v4 router address on Base Mainnet
 ```
 
-### 7.3 Vercel KV Setup
+### 7.3 Orchestrator state Setup
 
 ```bash
 # One-time setup via Vercel CLI
@@ -553,7 +567,7 @@ vercel kv create agenttrust-kv
 
 ```
 GitHub Push → Vercel Auto-Deploy (frontend)
-GitHub Push → Railway Auto-Deploy (worker)
+GitHub Push → Akash Auto-Deploy (worker)
 
 No custom CI needed. Both platforms auto-deploy from main branch.
 ```
@@ -576,7 +590,7 @@ const nextConfig = {
 };
 ```
 
-**Railway (railway.toml or Procfile):**
+**Akash (railway.toml or Procfile):**
 ```
 web: node dist/index.js
 build: npm run build
@@ -591,15 +605,15 @@ build: npm run build
 | Component | Service | Cost | Notes |
 |-----------|---------|------|-------|
 | Frontend + API | Vercel Hobby | **$0** | Free tier: 100GB bandwidth, serverless functions |
-| Key-value store | Vercel KV (Hobby) | **$0** | Free tier: 30K commands/day, 256MB storage |
-| Agent worker | Railway Starter | **~$1.50** | $5/month prorated, or usage-based |
-| Base Sepolia gas | Testnet faucet | **$0** | Free testnet ETH from Coinbase faucet |
+| Key-value store | Orchestrator state (Hobby) | **$0** | Free tier: 30K commands/day, 256MB storage |
+| Agent worker | Akash Starter | **~$1.50** | $5/month prorated, or usage-based |
+| Base Mainnet gas | Testnet faucet | **$0** | Free testnet ETH from Coinbase faucet |
 | AXL P2P | Gensyn | **$0** | Hackathon free tier |
 | 0G Storage | 0G | **$0** | Testnet free |
 | KeeperHub MCP | KeeperHub | **$0** | Hackathon free tier |
-| Uniswap swaps | Base Sepolia | **$0** | Testnet, no real value |
-| ENS subnames | ENS | **$0** | agenttrust.eth already owned |
-| Domain (optional) | Vercel subdomain | **$0** | agenttrust.vercel.app |
+| Uniswap swaps | Base Mainnet | **$0** | Testnet, no real value |
+| ENS subnames | ENS | **$0** | agentrust.base.eth already owned |
+| Domain (optional) | Vercel subdomain | **$0** | kdjf7q0t0leph7vm8mmo455g2o.ingress.akt.engineer |
 | Custom domain (optional) | Namecheap | **$0** (skip) | Not needed, Vercel subdomain works |
 
 **Total estimated cost: $1.50** (well under the $50 budget)
@@ -610,9 +624,9 @@ build: npm run build
 |----------|------------|----------------|----------|
 | Vercel bandwidth | 100 GB | ~0.5 GB | 99% |
 | Vercel function invocations | Unlimited (hobby) | ~5K/day | Plenty |
-| Vercel KV commands | 30K/day | ~10K/day | 66% |
-| Railway compute | 832 hours/month | ~72 hours | 91% |
-| Base Sepolia RPC calls | Rate-limited | ~1K/day | Fine |
+| Orchestrator state commands | 30K/day | ~10K/day | 66% |
+| Akash compute | 832 hours/month | ~72 hours | 91% |
+| Base Mainnet RPC calls | Rate-limited | ~1K/day | Fine |
 
 ---
 
@@ -624,14 +638,14 @@ Each component can fail independently. Here's what still works:
 
 | Component Down | What Breaks | What Still Works | Fallback |
 |----------------|-------------|-----------------|----------|
-| **Railway worker** | Auto-demos stop, judge triggers fail | Static agent list, cached activity feed, UI loads | Show last 50 cached events. Display banner: "Live demos paused — cached data shown" |
+| **Akash worker** | Auto-demos stop, judge triggers fail | Static agent list, cached activity feed, UI loads | Show last 50 cached events. Display banner: "Live demos paused — cached data shown" |
 | **AXL P2P** | Step 2 (DISCOVER) fails | Steps 1, 3-7 work fine | Mock AXL response: "Simulated P2P discovery". Log clearly that AXL was unavailable |
 | **KeeperHub MCP** | Step 5 (EXECUTE) fails | Steps 1-4, 6-7 work | Mock execution result. Show "Simulated task execution" in feed |
 | **0G Storage** | Step 6 (VERIFY) fails | Steps 1-5, 7 work | Use a keccak256 hash of output as fake 0G hash. Mark as simulated |
 | **Uniswap v4** | Step 7 (SETTLE) fails | Steps 1-6 complete | Direct ETH transfer instead of swap. Trust scores still update |
-| **Base Sepolia RPC** | Everything on-chain fails | UI loads, shows cached data | Display cached feed with timestamps. Banner: "Network issues — showing last known state" |
-| **Vercel KV** | SSE breaks, API reads fail | Static site loads | Client-side state only. Demo trigger returns error with message |
-| **Vercel (entire)** | Nothing loads | N/A | Keep a static HTML page on Railway as backup. Redirect DNS |
+| **Base Mainnet RPC** | Everything on-chain fails | UI loads, shows cached data | Display cached feed with timestamps. Banner: "Network issues — showing last known state" |
+| **Orchestrator state** | SSE breaks, API reads fail | Static site loads | Client-side state only. Demo trigger returns error with message |
+| **Vercel (entire)** | Nothing loads | N/A | Keep a static HTML page on Akash as backup. Redirect DNS |
 
 ### 9.2 Pre-Seeded Data Strategy
 
@@ -689,7 +703,7 @@ Build in this order. Each phase is independently testable.
 
 | Step | Task | Files | Done When |
 |------|------|-------|-----------|
-| 1.1 | Deploy contracts to Base Sepolia | `contracts/script/Deploy.s.sol` | Basescan shows all 3 contracts |
+| 1.1 | Deploy contracts to Base Mainnet | `contracts/script/Deploy.s.sol` | Basescan shows all 3 contracts |
 | 1.2 | Fund 6 demo agent wallets | `worker/src/wallet.ts` | Each has 0.1 testnet ETH |
 | 1.3 | Create Vercel project, connect KV | Vercel dashboard | `vercel dev` works locally |
 | 1.4 | Scaffold API routes (return mock data) | `frontend/app/api/*/route.ts` | All routes return 200 |
@@ -712,12 +726,12 @@ Build in this order. Each phase is independently testable.
 
 | Step | Task | Files | Done When |
 |------|------|-------|-----------|
-| 3.1 | Scaffold Railway worker | `worker/src/index.ts` | `npm start` runs without crash |
+| 3.1 | Scaffold Akash worker | `worker/src/index.ts` | `npm start` runs without crash |
 | 3.2 | Implement step 1 (REGISTER) | `worker/src/steps/1-register.ts` | Agent registers on-chain, KV updated |
 | 3.3 | Implement step 3 (NEGOTIATE/ESCROW) | `worker/src/steps/3-negotiate.ts`, `4-escrow.ts` | Agreement created, funds escrowed |
 | 3.4 | Implement step 7 (SETTLE) | `worker/src/steps/7-settle.ts` | Payment settled on-chain |
 | 3.5 | Wire up auto-scheduler | `worker/src/scheduler.ts` | Demo runs every 4 minutes |
-| 3.6 | Deploy worker to Railway | Railway dashboard | Worker running, auto-demos visible in Vercel KV |
+| 3.6 | Deploy worker to Akash | Akash dashboard | Worker running, auto-demos visible in Orchestrator state |
 
 ### Phase 4: Interactive Demo (Day 2 morning)
 
@@ -772,15 +786,15 @@ Build in this order. Each phase is independently testable.
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| Base Sepolia RPC rate-limited during demo | Medium | High — no txs confirmed | Cache multiple RPC endpoints (Alchemy, Infura, public). Rotate on failure |
-| Railway worker crashes | Medium | High — no auto-demos, no judge triggers | Railway auto-restarts. Add `process.on('uncaughtException')` with retry logic |
+| Base Mainnet RPC rate-limited during demo | Medium | High — no txs confirmed | Cache multiple RPC endpoints (Alchemy, Infura, public). Rotate on failure |
+| Akash worker crashes | Medium | High — no auto-demos, no judge triggers | Akash auto-restarts. Add `process.on('uncaughtException')` with retry logic |
 | AXL P2P nodes offline | High | Medium — step 2 fails silently | Mock AXL response. Feed shows "simulated discovery" |
 
 ### Medium Severity
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| Vercel KV command limit exceeded | Low | Medium — SSE breaks | Pre-seed data reduces reads. Use in-memory cache within API route lifecycle |
+| Orchestrator state command limit exceeded | Low | Medium — SSE breaks | Pre-seed data reduces reads. Use in-memory cache within API route lifecycle |
 | Testnet ETH faucet exhausted | Low | Medium — can't send txs | Pre-fund 6 wallets with 0.5 ETH each. That's enough for ~500 runs |
 | Vercel SSE connection drops | Medium | Low — feed stops updating | EventSource auto-reconnects. Poll `/api/interactions` as fallback |
 | Judge triggers demo while one running | High | Low — bad UX | Return 429 with progress of current run. Show current run below button |
@@ -790,7 +804,7 @@ Build in this order. Each phase is independently testable.
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
 | 0G Storage slow | Medium | Low — step 6 takes longer | Accept latency. Show "Verifying output..." with progress |
-| Uniswap v4 pool not deployed on Base Sepolia | Medium | Low — swap fails | Direct ETH transfer as fallback |
+| Uniswap v4 pool not deployed on Base Mainnet | Medium | Low — swap fails | Direct ETH transfer as fallback |
 | Custom domain DNS propagation delay | Low | Low — use .vercel.app | Don't bother with custom domain |
 | Mobile layout broken | Low | Low — most judges on laptop | Basic responsive CSS, test on phone before demo day |
 
@@ -828,15 +842,15 @@ agenttrust/
 │   │   ├── AgentCard.tsx                # Agent identity card
 │   │   └── HealthIndicator.tsx          # System status dot
 │   ├── lib/
-│   │   ├── kv.ts                       # Vercel KV helpers
-│   │   ├── base.ts                     # Base Sepolia RPC + contract ABIs
+│   │   ├── kv.ts                       # Orchestrator state helpers
+│   │   ├── base.ts                     # Base Mainnet RPC + contract ABIs
 │   │   ├── sse.ts                      # SSE client hook (useActivityFeed)
 │   │   └── types.ts                    # Shared TypeScript types
 │   ├── next.config.ts
 │   ├── package.json
 │   └── vercel.json                     # Vercel-specific config
 │
-├── worker/                      # Agent worker (deployed to Railway)
+├── worker/                      # Agent worker (deployed to Akash)
 │   ├── src/
 │   │   ├── index.ts              # Entry: scheduler + warm-up
 │   │   ├── orchestrator.ts       # 7-step demo flow
@@ -889,8 +903,8 @@ agenttrust/
 | Decision | Choice | Why |
 |----------|--------|-----|
 | Real-time transport | SSE | Vercel-native, simpler than WebSocket, server-push only is sufficient |
-| State store | Vercel KV | Free, Redis-fast, same platform as frontend |
-| Agent worker host | Railway | Long-running process, cheap, auto-deploy from Git |
+| State store | Orchestrator state | Free, Redis-fast, same platform as frontend |
+| Agent worker host | Akash | Long-running process, cheap, auto-deploy from Git |
 | Job queue | KV flag + polling | No infrastructure needed, one-at-a-time demos |
 | Monorepo structure | npm workspaces | SDK shared between frontend and worker, simple tooling |
 | Tx confirmation | RPC receipt polling | Worker already knows when it sent txs, no need for event listeners |
