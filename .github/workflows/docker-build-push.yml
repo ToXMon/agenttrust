@@ -39,7 +39,6 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/toxmon/agentrust-frontend:${{ env.VERSION }}
-            ${{ env.REGISTRY }}/toxmon/agentrust-frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -64,7 +63,6 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/toxmon/agentrust-axl-alpha:${{ env.VERSION }}
-            ${{ env.REGISTRY }}/toxmon/agentrust-axl-alpha:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -89,7 +87,6 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/toxmon/agentrust-axl-beta:${{ env.VERSION }}
-            ${{ env.REGISTRY }}/toxmon/agentrust-axl-beta:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -112,6 +109,5 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/toxmon/agentrust-orchestrator:${{ env.VERSION }}
-            ${{ env.REGISTRY }}/toxmon/agentrust-orchestrator:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

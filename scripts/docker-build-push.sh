@@ -31,10 +31,8 @@ fi
 echo "[2/5] Building frontend..."
 cd "$PROJ_DIR/frontend"
 docker build -t ${REGISTRY}/agentrust-frontend:${VERSION} .
-docker tag ${REGISTRY}/agentrust-frontend:${VERSION} ${REGISTRY}/agentrust-frontend:latest
 if [ "$PUSH" = "push" ]; then
   docker push ${REGISTRY}/agentrust-frontend:${VERSION}
-  docker push ${REGISTRY}/agentrust-frontend:latest
 fi
 echo "  ✅ agentrust-frontend:${VERSION}"
 
@@ -44,10 +42,8 @@ cd "$PROJ_DIR"
 docker build -f deploy/akash/axl-node.Dockerfile \
   --build-arg CONFIG_FILE=configs/node-a.json \
   -t ${REGISTRY}/agentrust-axl-alpha:${VERSION} .
-docker tag ${REGISTRY}/agentrust-axl-alpha:${VERSION} ${REGISTRY}/agentrust-axl-alpha:latest
 if [ "$PUSH" = "push" ]; then
   docker push ${REGISTRY}/agentrust-axl-alpha:${VERSION}
-  docker push ${REGISTRY}/agentrust-axl-alpha:latest
 fi
 echo "  ✅ agentrust-axl-alpha:${VERSION}"
 
@@ -56,10 +52,8 @@ echo "[4/5] Building AXL Node Beta (provider)..."
 docker build -f deploy/akash/axl-node.Dockerfile \
   --build-arg CONFIG_FILE=configs/node-b.json \
   -t ${REGISTRY}/agentrust-axl-beta:${VERSION} .
-docker tag ${REGISTRY}/agentrust-axl-beta:${VERSION} ${REGISTRY}/agentrust-axl-beta:latest
 if [ "$PUSH" = "push" ]; then
   docker push ${REGISTRY}/agentrust-axl-beta:${VERSION}
-  docker push ${REGISTRY}/agentrust-axl-beta:latest
 fi
 echo "  ✅ agentrust-axl-beta:${VERSION}"
 
@@ -70,10 +64,8 @@ docker build \
   --build-arg ORCHESTRATOR_MODE=true \
   -t ${REGISTRY}/agentrust-orchestrator:${VERSION} . 2>/dev/null || \
   docker build -t ${REGISTRY}/agentrust-orchestrator:${VERSION} .
-docker tag ${REGISTRY}/agentrust-orchestrator:${VERSION} ${REGISTRY}/agentrust-orchestrator:latest
 if [ "$PUSH" = "push" ]; then
   docker push ${REGISTRY}/agentrust-orchestrator:${VERSION}
-  docker push ${REGISTRY}/agentrust-orchestrator:latest
 fi
 echo "  ✅ agentrust-orchestrator:${VERSION}"
 
