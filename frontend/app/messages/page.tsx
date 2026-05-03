@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { MessageTypeBadge } from "@/components/shared/StatusBadge";
+import { SkeletonMessage } from "@/components/shared/SkeletonCard";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 
 interface AXLMessage {
   version: string;
@@ -21,36 +23,31 @@ interface DisplayMessage {
   receivedAt: number;
 }
 
-// Known VPS peer IDs (Node A and Node B on 142.93.241.144)
-const KNOWN_PEER_IDS: Record<string, string> = {};
-
 export default function MessagesPage() {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [nodesOnline, setNodesOnline] = useState<{ name: string; online: boolean }[]>([]);
-  const [peerIds, setPeerIds] = useState<Record<string, string>>(KNOWN_PEER_IDS);
   const [isPolling, setIsPolling] = useState(true);
   const [sending, setSending] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [peerIds, setPeerIds] = useState<Record<string, string>>({});
 
   const checkNodes = useCallback(async () => {
     try {
       const res = await fetch("/api/axl?endpoint=topology");
       const data = await res.json();
-      const newPeerIds: Record<string, string> = {};
       setNodesOnline(
-        data.results.map((r: any) => {
-          if (r.status === "ok" && r.data?.our_public_key) {
-            newPeerIds[r.node] = r.data.our_public_key;
-          }
-          return {
-            name: r.node,
-            online: r.status === "ok",
-          };
-        })
+        data.results.map((r: any) => ({
+          name: r.node,
+          online: r.status === "ok",
+        }))
       );
-      if (Object.keys(newPeerIds).length > 0) {
-        setPeerIds(newPeerIds);
+      const newPeerIds: Record<string, string> = {};
+      for (const r of data.results) {
+        if (r.status === "ok" && r.data?.our_public_key) {
+          newPeerIds[r.node] = r.data.our_public_key;
+        }
       }
+      setPeerIds(newPeerIds);
     } catch {
       setNodesOnline([
         { name: "Node A", online: false },
@@ -94,43 +91,29 @@ export default function MessagesPage() {
   const sendTestMessage = async () => {
     setSending(true);
     try {
-      // Resolve peer IDs from topology if not cached
-      if (Object.keys(peerIds).length === 0) {
-        await checkNodes();
-      }
-
-      // Get Node B's peer ID to send from Node A
-      const nodeBPeerId = peerIds["Node B"];
-      if (!nodeBPeerId) {
-        console.error("No peer ID for Node B");
-        setSending(false);
-        return;
-      }
-
+      if (Object.keys(peerIds).length === 0) await checkNodes();
+      const targetPeerId = peerIds["Node B"];
+      if (!targetPeerId) { setSending(false); return; }
       const testMsg = {
         version: "1.0.0",
         type: "discover",
-        sender: "dashboard.agentrust.base.eth",
-        recipient: "provider.agentrust.base.eth",
+        sender: "dashboard.agenttrust.eth",
+        recipient: "peer",
         timestamp: Date.now(),
         nonce: crypto.randomUUID(),
         payload: {
           capabilities: ["Testing", "Dashboard"],
           trustScore: 100,
-          ensName: "dashboard.agentrust.base.eth",
+          ensName: "dashboard.agenttrust.eth",
         },
       };
-
-      const sendRes = await fetch("/api/axl", {
+      await fetch("/api/axl", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ peerId: nodeBPeerId, message: testMsg, node: 0 }),
+        body: JSON.stringify({ peerId: targetPeerId, message: testMsg, node: 0 }),
       });
-
-      const sendResult = await sendRes.json();
-      console.log("Send result:", sendResult);
-    } catch (err) {
-      console.error("Send failed:", err);
+    } catch {
+      // handle error
     }
     setSending(false);
   };
@@ -138,7 +121,7 @@ export default function MessagesPage() {
   const anyOnline = nodesOnline.some((n) => n.online);
 
   return (
-    <div>
+    <ErrorBoundary>
       <div className="mx-auto max-w-7xl px-6 pb-20 pt-12">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -164,7 +147,7 @@ export default function MessagesPage() {
                 <span
                   className={`inline-block h-2 w-2 rounded-full ${
                     node.online ? "bg-[#15be53] animate-pulse" : "bg-[#64748d]"
-                  }`
+                  }`}
                 />
                 {node.name}
               </span>
@@ -229,66 +212,48 @@ export default function MessagesPage() {
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className="rounded-lg border border-[#e5edf5] bg-white p-4 shadow-sm transition-colors hover:border-[#b9b9f9]"
+              className="rounded-lg border border-[#e5edf5] bg-white p-4 transition-shadow hover:shadow-ambient-card"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MessageTypeBadge type={msg.body.type} />
-                  <span className="font-mono text-[12px] text-[#64748d]">
-                    {msg.source}
-                  </span>
-                  <span className="text-[#64748d]">&rarr;</span>
-                  <span className="font-mono text-[12px] text-[#64748d]">
-                    {msg.source === "Node A" ? "Node B" : "Node A"}
-                  </span>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(83,58,253,0.08)]">
+                    <span className="text-sm">&#x1F4E8;</span>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <MessageTypeBadge type={msg.body.type} />
+                      <span className="rounded-sm bg-[rgba(83,58,253,0.06)] px-1.5 py-0.5 font-mono text-[10px] text-purple">
+                        {msg.source}
+                      </span>
+                    </div>
+                    <p className="mt-1 font-mono text-[12px] text-[#64748d]">
+                      From: {msg.fromPeerId.slice(0, 16)}...
+                    </p>
+                  </div>
                 </div>
                 <span className="font-mono text-[11px] text-[#64748d]">
                   {new Date(msg.receivedAt).toLocaleTimeString()}
                 </span>
               </div>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-xs text-[#64748d]">From:</span>
-                <span className="rounded bg-[#e5edf5] px-1.5 py-0.5 font-mono text-[11px] text-navy">
-                  {msg.body.sender}
-                </span>
-                <span className="text-xs text-[#64748d]">To:</span>
-                <span className="rounded bg-[#e5edf5] px-1.5 py-0.5 font-mono text-[11px] text-navy">
-                  {msg.body.recipient}
-                </span>
-              </div>
-              <details className="mt-2">
-                <summary className="cursor-pointer text-xs text-[#5338fd] hover:text-[#6d5bfc]">
-                  Payload
-                </summary>
-                <pre className="mt-1 overflow-auto rounded bg-[#f8fafc] p-2 text-[11px] text-[#64748d]">
-                  {JSON.stringify(msg.body.payload, null, 2)}
+              {/* Payload */}
+              <div className="mt-3 rounded-md bg-[rgba(83,58,253,0.02)] p-3">
+                <pre className="font-mono text-[12px] leading-relaxed text-[#061b31] whitespace-pre-wrap">
+                  {JSON.stringify(msg.body.payload, null, 2).slice(0, 300)}
                 </pre>
-              </details>
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Footer */}
-        <div className="mt-8 flex items-center justify-center gap-2 text-[12px] text-[#64748d]">
-          <span>Powered by</span>
-          <span className="font-medium text-navy">Gensyn AXL P2P Mesh</span>
+        {/* Sponsor Proof */}
+        <div className="mt-12 border-t border-[#e5edf5] pt-6">
+          <div className="flex items-center gap-4">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-[#64748d]">Powered by</span>
+            <span className="rounded-sm bg-[rgba(83,58,253,0.08)] px-2 py-0.5 font-mono text-[11px] text-purple">Gensyn AXL</span>
+            <span className="rounded-sm bg-[rgba(83,58,253,0.08)] px-2 py-0.5 font-mono text-[11px] text-purple">P2P Mesh</span>
+          </div>
         </div>
       </div>
-
-      {/* Footer Nav */}
-      <footer className="mx-auto max-w-7xl px-6 pb-8 pt-8">
-        <div className="flex items-center justify-between border-t border-[#e5edf5] pt-6">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-purple text-[12px] font-bold text-white">
-              AT
-            </div>
-            <span className="text-sm font-medium text-navy">AgentTrust</span>
-          </div>
-          <span className="text-xs text-[#64748d]">
-            ETHGlobal Open Agents Hackathon 2026
-          </span>
-        </div>
-      </footer>
-    </div>
+    </ErrorBoundary>
   );
 }
