@@ -1,4 +1,6 @@
 import type { GenericContractsDeclaration } from "@/utils/scaffold/contract";
+export const ERC8004_IDENTITY_REGISTRY = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
+export const ERC8004_REPUTATION_REGISTRY = "0x8004BAa17C55a88189AE136b182e5fdA19dE9b63";
 
 /**
  * External contracts on Base (chainId 8453)
@@ -20,6 +22,17 @@ const externalContracts = {
           name: "getAgentCapabilities",
           outputs: [{ name: "", type: "bytes32[]" }],
           stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            { name: "owner", type: "address" },
+            { name: "agentURI", type: "string" },
+            { name: "metadata", type: "bytes" },
+          ],
+          name: "register",
+          outputs: [{ name: "agentId", type: "uint256" }],
+          stateMutability: "nonpayable",
           type: "function",
         },
         {
@@ -59,6 +72,38 @@ const externalContracts = {
           ],
           name: "getDimensionScore",
           outputs: [{ name: "score", type: "uint256" }],
+          stateMutability: "view",
+          type: "function",
+        },
+        {
+          inputs: [
+            { name: "agentId", type: "uint256" },
+            { name: "value", type: "int128" },
+            { name: "valueDecimals", type: "uint8" },
+            { name: "tag1", type: "string" },
+            { name: "tag2", type: "string" },
+            { name: "endpoint", type: "string" },
+            { name: "ipfsHash", type: "string" },
+            { name: "dataHash", type: "bytes32" },
+          ],
+          name: "giveFeedback",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            { name: "agentId", type: "uint256" },
+            { name: "trustedClients", type: "address[]" },
+            { name: "tag1", type: "string" },
+            { name: "tag2", type: "string" },
+          ],
+          name: "getSummary",
+          outputs: [
+            { name: "count", type: "uint64" },
+            { name: "value", type: "int128" },
+            { name: "decimals", type: "uint8" },
+          ],
           stateMutability: "view",
           type: "function",
         },

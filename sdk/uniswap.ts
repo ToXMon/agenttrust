@@ -17,6 +17,11 @@ import {
   type Chain,
 } from "viem";
 import { base, baseSepolia } from "viem/chains";
+import {
+  getAgentReputation as getERC8004Reputation,
+  getAgentIdByOwner,
+  type ERC8004SwapLimit,
+} from "./erc8004.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -110,6 +115,8 @@ export interface TrustGatedSwapParams {
   trustScore: number;
   trustThreshold: number;
   recipient?: Hex;
+  /** ERC-8004 reputation score (0-100) from ReputationRegistry, if available */
+  erc8004Reputation?: number;
 }
 
 export interface UniswapConfig {
@@ -192,6 +199,42 @@ export function getSwapLimits(trustScore: number): TrustLimits {
   return { maxAmount: BigInt(0), slippageBps: 0, allowedPairs: [], level: "blocked" };
 }
 
+/**
+ * Compute trust limits from an ERC-8004 reputation score.
+ *
+ * Maps reputation to swap parameters with a separate tier system:
+ * - 50-69 (bronze): 100 USDC, 300bps slippage, USDC→WETH only
+ * - 70-84 (silver): 1,000 USDC, 100bps slippage, USDC→WETH/ETH
+ * - 85-100 (gold): 10,000 USDC, 50bps slippage, all pairs
+ */
+export function computeERC8004Limits(reputationScore: number): TrustLimits {
+  if (reputationScore >= 85) {
+    return {
+      maxAmount: parseUnits("10000", 6),
+      slippageBps: 50,
+      allowedPairs: [[TOKENS.USDC, TOKENS.WETH], [TOKENS.WETH, TOKENS.USDC], [TOKENS.USDC, TOKENS.ETH]],
+      level: "gold",
+    };
+  }
+  if (reputationScore >= 70) {
+    return {
+      maxAmount: parseUnits("1000", 6),
+      slippageBps: 100,
+      allowedPairs: [[TOKENS.USDC, TOKENS.WETH], [TOKENS.USDC, TOKENS.ETH]],
+      level: "silver",
+    };
+  }
+  if (reputationScore >= 50) {
+    return {
+      maxAmount: parseUnits("100", 6),
+      slippageBps: 300,
+      allowedPairs: [[TOKENS.USDC, TOKENS.WETH]],
+      level: "bronze",
+    };
+  }
+  return { maxAmount: BigInt(0), slippageBps: 0, allowedPairs: [], level: "blocked" };
+}
+
 function isPairAllowed(
   tokenIn: Hex,
   tokenOut: Hex,
@@ -259,7 +302,28 @@ export class UniswapClient {
   // ── Trust-gated quote ────────────────────────────────────────────────────
 
   async getQuote(params: TrustGatedSwapParams): Promise<SwapQuote> {
-    const limits = getSwapLimits(params.trustScore);
+    let limits = getSwapLimits(params.trustScore);
+
+    // ── ERC-8004 reputation overlay ────────────────────────────────────
+    // If an ERC-8004 reputation score is provided, merge it with the
+    // existing TrustNFT tiers. Higher ERC-8004 tier overrides lower
+    // trust-only tiers. Agents with BOTH high scores get a +20% bonus.
+    if (params.erc8004Reputation !== undefined && params.erc8004Reputation >= 50) {
+      const erc8004Limits = computeERC8004Limits(params.erc8004Reputation);
+
+      // Use whichever tier is more permissive
+      if (erc8004Limits.maxAmount > limits.maxAmount) {
+        limits = { ...erc8004Limits };
+      }
+
+      // Dual-score bonus: both trust score ≥ 76 AND ERC-8004 ≥ 85
+      if (params.trustScore >= 76 && params.erc8004Reputation >= 85) {
+        limits = {
+          ...limits,
+          maxAmount: (limits.maxAmount * 120n) / 100n,
+        };
+      }
+    }
 
     if (limits.level === "blocked") {
       throw new TrustGateError(
@@ -498,4 +562,77 @@ export class UniswapClient {
   getPublicClient(): PublicClient {
     return this.publicClient;
   }
+}
+
+// ─── ERC-8004 Trust Gate (Uniswap Track) ────────────────────────────────────────
+
+/**
+ * Query ERC-8004 reputation and compute combined trust-gated swap limits.
+ *
+ * Checks on-chain identity via IdentityRegistry, pulls reputation from
+ * ReputationRegistry, and merges with the existing TrustNFT score tiers.
+ *
+ * Returns the ERC-8004 swap limit which can be used alongside the
+ * existing getSwapLimits() for dual-score bonus calculation in getQuote().
+ */
+export async function getTrustGatedSwapLimit(
+  agentAddress: Hex,
+  publicClient: PublicClient,
+): Promise<ERC8004SwapLimit & { trustLimits: TrustLimits }> {
+  const agentId = await getAgentIdByOwner(publicClient, agentAddress);
+
+  if (agentId === null) {
+    return {
+      maxAmountUSDC: "0",
+      slippageBps: 0,
+      tier: "blocked" as const,
+      reputationScore: 0,
+      hasIdentity: false,
+      trustLimits: { maxAmount: BigInt(0), slippageBps: 0, allowedPairs: [], level: "blocked" },
+    };
+  }
+
+  let reputationScore = 0;
+  try {
+    const summary = await getERC8004Reputation(publicClient, {
+      agentId,
+      tag1: "quality",
+      tag2: "",
+    });
+    reputationScore = summary.normalizedScore;
+  } catch {
+    reputationScore = 0;
+  }
+
+  const erc8004SwapLimit = computeERC8004Limits(reputationScore);
+
+  // Map to ERC8004SwapLimit format
+  let tier: "blocked" | "bronze" | "silver" | "gold" = "blocked";
+  let maxAmountUSDC = "0";
+  let slippageBps = 0;
+
+  if (reputationScore < 50) {
+    tier = "blocked";
+  } else if (reputationScore <= 69) {
+    tier = "bronze";
+    maxAmountUSDC = "100";
+    slippageBps = 300;
+  } else if (reputationScore <= 84) {
+    tier = "silver";
+    maxAmountUSDC = "1000";
+    slippageBps = 100;
+  } else {
+    tier = "gold";
+    maxAmountUSDC = "10000";
+    slippageBps = 50;
+  }
+
+  return {
+    maxAmountUSDC,
+    slippageBps,
+    tier,
+    reputationScore,
+    hasIdentity: true,
+    trustLimits: erc8004SwapLimit,
+  };
 }

@@ -154,3 +154,45 @@ AgentTrust uses Uniswap for trust-gated token swaps between AI agents. An agent'
 - `writeContract()` succeeds with proper gas estimation
 - `waitForTransactionReceipt()` returns confirmation with gas used and block number
 - Balance checking via `getBalance()` and ERC20 `balanceOf()` both work correctly
+
+## ERC-8004 Integration for Uniswap Track
+
+### Agent Discovery via On-Chain Identity
+
+Two ERC-8004 contracts sit on Base mainnet: IdentityRegistry at `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` and ReputationRegistry at `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63`. The IdentityRegistry is an ERC-721. When an agent registers, it gets a token with a metadata URI and capability flags.
+
+The discovery flow is straightforward. A requester queries IdentityRegistry for agents with matching capabilities. Each identity token maps to a reputation entry. The requester filters by tags — "quality", "uptime", "latency" — to find agents scoring well on dimensions that matter for the task.
+
+We built `sdk/erc8004.ts` to wrap these interactions. Five functions: `registerAgentIdentity` for minting, `getAgentReputation` for querying aggregated scores, `submitFeedback` for posting ratings, `getAgentIdByOwner` for reverse lookups, and `getTrustGatedSwapLimit` which ties reputation to swap parameters.
+
+### Reputation-Gated Swap Limits
+
+This is where ERC-8004 meets Uniswap. Our existing trust system uses TrustNFT (ERC-7857) scores to gate swaps — agents below 26 are blocked, bronze gets 100 USDC, silver 1,000, gold 10,000. We added a parallel tier system based on ERC-8004 reputation:
+
+- Reputation below 50: blocked
+- 50-69 (bronze): 100 USDC max, 300bps slippage
+- 70-84 (silver): 1,000 USDC max, 100bps slippage
+- 85-100 (gold): 10,000 USDC max, 50bps slippage
+
+The `getQuote()` method in `sdk/uniswap.ts` now accepts an optional `erc8004Reputation` field. When provided, it computes limits from both systems and uses whichever is more permissive. If an agent has TrustNFT score above 76 and ERC-8004 reputation above 85, they get a 20% bonus on max swap. A gold agent with dual scores can swap up to 12,000 USDC.
+
+`computeERC8004Limits()` maps reputation integers to TrustLimits objects. Same structure as existing trust tiers. The rest of the swap pipeline — pair validation, slippage enforcement, Permit2 signing — works unchanged.
+
+### Feedback After Settlement
+
+After a swap completes and the service is delivered, the requester submits feedback to ReputationRegistry via `giveFeedback()`. The function takes a signed value with configurable decimals: quality 87/100 becomes `value=87, decimals=0`. Uptime 99.77% becomes `value=9977, decimals=2`. Tags categorize the feedback. The endpoint field records which service was rated.
+
+This becomes part of the agent's permanent reputation. Future requesters query `getSummary()` which aggregates feedback, optionally filtered by tags and trusted client addresses. It returns count, raw value, and decimal precision. We normalize to a 0-100 score in `getAgentReputation()`.
+
+### The Trust-Gated Commerce Loop
+
+Four steps, each feeding the next:
+
+1. **DISCOVER** — Requester queries IdentityRegistry for agents with matching capabilities
+2. **TRUST** — Requester checks ReputationRegistry scores, computes swap limits
+3. **TRANSACT** — Uniswap swap executes with trust-gated parameters (amount, slippage, pairs)
+4. **RATE** — Requester submits feedback to ReputationRegistry, updating reputation
+
+Better reputation → higher swap limits → more commerce → more feedback → better reputation. The loop runs entirely on-chain. Identity tokens, reputation scores, swap transactions, and feedback entries all live on Base mainnet. No off-chain database. No centralized scoring.
+
+The contracts are deployed and real. The SDK compiles with zero TypeScript errors. The integration is live.
