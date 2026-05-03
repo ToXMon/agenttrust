@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { MessageTypeBadge } from "@/components/shared/StatusBadge";
-import { SkeletonMessage } from "@/components/shared/SkeletonCard";
-import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 
 interface AXLMessage {
   version: string;
@@ -140,7 +138,7 @@ export default function MessagesPage() {
   const anyOnline = nodesOnline.some((n) => n.online);
 
   return (
-    <ErrorBoundary>
+    <>
       <div className="mx-auto max-w-7xl px-6 pb-20 pt-12">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -291,6 +289,6 @@ export default function MessagesPage() {
           </span>
         </div>
       </footer>
-    </ErrorBoundary>
+    </>
   );
 }
