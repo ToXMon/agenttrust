@@ -17,7 +17,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  VERSION: ${{ github.event.inputs.version || 'v0.1.0' }}
+  VERSION: ${{ github.event.inputs.version || 'v0.3.0' }}
 
 jobs:
   build-frontend:
