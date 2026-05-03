@@ -5,6 +5,17 @@ import { useScaffoldReadContract } from "@/components/scaffold-eth/hooks/useScaf
 import { TrustScoreBadge, TrustBar } from "@/components/shared/TrustScoreBadge";
 import { SkeletonCard } from "@/components/shared/SkeletonCard";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
+import { useState, useEffect } from "react";
+import { createPublicClient, http } from "viem";
+import { base } from "viem/chains";
+
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http(process.env.NEXT_PUBLIC_BASE_RPC || "https://mainnet.base.org"),
+});
+
+const ERC8004_IDENTITY_REGISTRY = "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432";
+const ERC8004_REPUTATION_REGISTRY = "0x8004BAa17C55a88189AE136b182e5fdA19dE9b63";
 
 export default function Home() {
   return (
@@ -124,15 +135,65 @@ function LiveStats() {
     functionName: "totalMinted",
   });
 
+  const [erc8004Stats, setErc8004Stats] = useState<{
+    loading: boolean;
+    identities: string;
+    reputationSubmissions: string;
+  }>({
+    loading: true,
+    identities: "0",
+    reputationSubmissions: "Coming soon",
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const totalSupply = (await publicClient.readContract({
+          address: ERC8004_IDENTITY_REGISTRY,
+          abi: [
+            {
+              name: "totalSupply",
+              type: "function",
+              stateMutability: "view",
+              inputs: [],
+              outputs: [{ name: "", type: "uint256" }],
+            },
+          ] as const,
+          functionName: "totalSupply",
+        })) as bigint;
+
+        if (cancelled) return;
+        setErc8004Stats({
+          loading: false,
+          identities: String(totalSupply),
+          reputationSubmissions: "Coming soon",
+        });
+      } catch {
+        if (!cancelled) {
+          setErc8004Stats({
+            loading: false,
+            identities: "0",
+            reputationSubmissions: "Coming soon",
+          });
+        }
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
   const stats = [
     { label: "Registered Agents", value: totalAgents ? String(totalAgents) : "0", loading: loadingAgents },
     { label: "Service Agreements", value: totalAgreements ? String(totalAgreements) : "0", loading: loadingAgreements },
     { label: "Trust NFTs Minted", value: totalTrustNFTs ? String(totalTrustNFTs) : "0", loading: loadingTrust },
+    { label: "ERC-8004 Identities", value: erc8004Stats.identities, loading: erc8004Stats.loading },
+    { label: "Reputation Submissions", value: erc8004Stats.reputationSubmissions, loading: erc8004Stats.loading },
   ];
 
   return (
     <section className="mx-auto max-w-7xl px-6 pb-12">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
         {stats.map((stat) => (
           <div
             key={stat.label}

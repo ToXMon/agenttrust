@@ -22,6 +22,7 @@ const navLinks = [
   { href: "/trust", label: "Trust" },
   { href: "/messages", label: "Messages" },
   { href: "/audit", label: "Audit" },
+   { href: "/swap", label: "Swap" },
 ];
 
 export default function RootLayout({

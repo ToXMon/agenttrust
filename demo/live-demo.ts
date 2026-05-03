@@ -12,6 +12,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { exec, type ChildProcess, spawn } from "child_process";
+import { runDemo, type DemoResult } from "./scenario.js";
 
 // ── Configuration ──────────────────────────────────────────────
 
@@ -290,8 +291,21 @@ async function main(): Promise<void> {
     await sleep(MONITOR_INTERVAL_MS);
   }
 
+  // ── Step 5: On-Chain Scenario ────────────────────────────────
+  logBanner("Step 5 / 6: ON-CHAIN SCENARIO");
+  let scenarioResult: DemoResult | null = null;
+  try {
+    scenarioResult = await runDemo();
+    log("LiveDemo", `Scenario completed: ${scenarioResult.stepsCompleted}/${scenarioResult.stepsTotal} steps`);
+    if (scenarioResult.feedbackScore !== undefined) {
+      log("LiveDemo", `Feedback score: ${scenarioResult.feedbackScore} tag=${scenarioResult.feedbackTag}`);
+    }
+  } catch (err) {
+    log("LiveDemo", `Scenario error: ${(err as Error).message}`);
+  }
+
   // ── Step 5: Report ───────────────────────────────────────────
-  logBanner("Step 5 / 5: REPORT");
+  logBanner("Step 6 / 6: REPORT");
   const totalDuration = Date.now() - startTime;
 
   log("LiveDemo", `Total demo time: ${(totalDuration / 1000).toFixed(1)}s`);
@@ -325,9 +339,16 @@ async function main(): Promise<void> {
   log("LiveDemo", "  requester.agenttrust.eth — see on-chain TrustNFT");
   log("LiveDemo", "  provider.agenttrust.eth  — see on-chain TrustNFT");
   log("LiveDemo", `  (Contracts on Base Mainnet — verify at basescan.org)`);
+  if (scenarioResult) {
+    log("LiveDemo", `On-chain scenario: ${scenarioResult.stepsCompleted}/${scenarioResult.stepsTotal} steps — ${scenarioResult.passed ? "PASSED" : "FAILED"}`);
+    if (scenarioResult.feedbackScore !== undefined) {
+      log("LiveDemo", `Final feedback: ${scenarioResult.feedbackScore} tag=${scenarioResult.feedbackTag}`);
+    }
+  }
+
 
   // Final status
-  const passed = messageLog.length > 0;
+  const passed = messageLog.length > 0 || (scenarioResult?.passed ?? false);
   logBanner(
     passed
       ? `DEMO PASSED — ${messageLog.length} messages, ${servicesCompleted} services completed`

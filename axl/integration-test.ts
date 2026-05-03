@@ -124,7 +124,7 @@ async function testTrustQueryResponse(): Promise<void> {
     MessageType.TRUST_QUERY,
     "agent-requester",
     "agent-provider",
-    { agentAddress: "0xce9B692A01D47054e9ebC15722c071cbc4BE714e", minimumScore: 50 },
+    { agentAddress: "0xREDACTED_LEGACY_ADDR", minimumScore: 50 },
   );
 
   await clientA.send(topoB.ourPublicKey, query);
@@ -140,7 +140,7 @@ async function testTrustQueryResponse(): Promise<void> {
     "agent-provider",
     "agent-requester",
     {
-      agentAddress: "0xce9B692A01D47054e9ebC15722c071cbc4BE714e",
+      agentAddress: "0xREDACTED_LEGACY_ADDR",
       score: 92,
       agreementsCompleted: 15,
       agreementsDisputed: 0,

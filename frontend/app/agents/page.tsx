@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
+import { createPublicClient, http } from "viem";
+import { base } from "viem/chains";
 import { useScaffoldReadContract } from "@/components/scaffold-eth/hooks/useScaffoldReadContract";
-import { useScaffoldWriteContract } from "@/components/scaffold-eth/hooks/useScaffoldWriteContract";
 import { TrustScoreBadge, TrustBar } from "@/components/shared/TrustScoreBadge";
 import { SkeletonCard } from "@/components/shared/SkeletonCard";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
+import { getAgentIdByOwner, getAgentReputation } from "../../sdk/erc8004.js";
 
 interface AgentData {
   ensName: string;
@@ -19,6 +21,11 @@ interface AgentWithTrust extends AgentData {
   tokenId: number;
   trustScore: number;
 }
+
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http(process.env.NEXT_PUBLIC_BASE_RPC || "https://mainnet.base.org"),
+});
 
 export default function AgentsPage() {
   const { isConnected } = useAccount();
@@ -42,12 +49,8 @@ export default function AgentsPage() {
       const total = Number(totalRegistered);
       const loaded: AgentWithTrust[] = [];
 
-      // We need to iterate tokenIds from 1 to total
-      // Each agent is an ERC721 token, tokenId starts at 1
       for (let i = 1; i <= total; i++) {
         try {
-          // We read these sequentially via separate hook calls in a sub-component
-          // For now, push placeholder data
           loaded.push({
             tokenId: i,
             ensName: `agent-${i}.agenttrust.eth`,
@@ -122,7 +125,7 @@ export default function AgentsPage() {
         {!loading && !loadingCount && agents.length === 0 && (
           <div className="mt-12 rounded-lg border border-dashed border-[#b9b9f9] bg-[rgba(83,58,253,0.02)] p-12 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(83,58,253,0.08)]">
-              <span className="text-3xl">\U0001f916</span>
+              <span className="text-3xl">🤖</span>
             </div>
             <h3 className="mt-4 text-lg font-light text-navy">No agents yet</h3>
             <p className="mt-2 text-sm text-[#64748d]">
@@ -167,6 +170,49 @@ function AgentCard({ tokenId }: { tokenId: number }) {
     args: [BigInt(tokenId)],
   });
 
+  const { data: owner } = useScaffoldReadContract({
+    contractName: "AgentRegistry",
+    functionName: "ownerOf",
+    args: [BigInt(tokenId)],
+  });
+
+  const [erc8004, setErc8004] = useState<{
+    loading: boolean;
+    agentId: bigint | null;
+    score: number;
+    count: number;
+    tier: "blocked" | "bronze" | "silver" | "gold";
+  }>({ loading: true, agentId: null, score: 0, count: 0, tier: "blocked" });
+
+  useEffect(() => {
+    if (!owner) return;
+    let cancelled = false;
+
+    async function fetchERC8004() {
+      try {
+        const agentId = await getAgentIdByOwner(publicClient, owner as `0x${string}`);
+        if (cancelled) return;
+        if (!agentId) {
+          setErc8004({ loading: false, agentId: null, score: 0, count: 0, tier: "blocked" });
+          return;
+        }
+        const rep = await getAgentReputation(publicClient, { agentId, tag1: "quality" });
+        if (cancelled) return;
+        const score = rep.normalizedScore;
+        const tier: "blocked" | "bronze" | "silver" | "gold" =
+          score >= 85 ? "gold" : score >= 70 ? "silver" : score >= 50 ? "bronze" : "blocked";
+        setErc8004({ loading: false, agentId, score, count: Number(rep.count), tier });
+      } catch {
+        if (!cancelled) {
+          setErc8004({ loading: false, agentId: null, score: 0, count: 0, tier: "blocked" });
+        }
+      }
+    }
+
+    fetchERC8004();
+    return () => { cancelled = true; };
+  }, [owner]);
+
   if (loadingAgent) return <SkeletonCard />;
 
   const ensName = (agent as any)?.ensName || `agent-${tokenId}.agenttrust.eth`;
@@ -183,7 +229,7 @@ function AgentCard({ tokenId }: { tokenId: number }) {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[rgba(83,58,253,0.08)]">
-          <span className="text-lg">\U0001f916</span>
+          <span className="text-lg">🤖</span>
         </div>
         <div className="flex items-center gap-2">
           {score > 0 && <TrustScoreBadge score={score} />}
@@ -213,6 +259,40 @@ function AgentCard({ tokenId }: { tokenId: number }) {
           <TrustBar score={score} />
         </div>
       )}
+
+      {/* ERC-8004 Identity Panel */}
+      <div className="mt-4 rounded-md border border-[#e5edf5] bg-[rgba(83,58,253,0.02)] p-3">
+        <p className="font-mono text-[11px] uppercase tracking-wider text-[#64748d]">ERC-8004 Identity</p>
+        {erc8004.loading ? (
+          <div className="mt-2 space-y-2">
+            <div className="h-3 w-20 rounded bg-[#e5edf5]" />
+            <div className="h-3 w-16 rounded bg-[#e5edf5]" />
+          </div>
+        ) : erc8004.agentId === null ? (
+          <p className="mt-1 text-sm text-[#64748d]">Not registered</p>
+        ) : (
+          <div className="mt-2 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-navy">ID #{erc8004.agentId.toString()}</span>
+              <span className={`rounded-sm px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-white ${
+                erc8004.tier === "gold" ? "bg-gradient-to-r from-[#533afd] to-[#f96bee]" :
+                erc8004.tier === "silver" ? "bg-[#533afd]" :
+                erc8004.tier === "bronze" ? "bg-[#b9b9f9] text-[#061b31]" : "bg-[#64748d]"
+              }`}>
+                {erc8004.tier}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-[#64748d]">Score</span>
+              <span className="font-mono text-sm text-navy">{erc8004.score}/100</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-[#64748d]">Feedback</span>
+              <span className="font-mono text-sm text-navy">{erc8004.count}</span>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Capabilities Placeholder */}
       <div className="mt-4 flex flex-wrap gap-2">

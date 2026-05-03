@@ -24,6 +24,10 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import * as dotenv from "dotenv";
+import {
+  registerAgentIdentity,
+  submitFeedback,
+} from "../sdk/erc8004.js";
 
 dotenv.config({ path: ".env" });
 dotenv.config({ path: "contracts/.env" });
@@ -138,8 +142,8 @@ async function main(): Promise<void> {
   const account = privateKeyToAccount(pk);
   console.log("📋 Wallet:", account.address);
 
-  const publicClient = createPublicClient({ chain: base, transport: http() });
-  const walletClient = createWalletClient({ account, chain: base, transport: http() });
+  const publicClient = createPublicClient({ chain: base, transport: http() }) as any;
+  const walletClient = createWalletClient({ account, chain: base, transport: http() }) as any;
 
   // Pre-flight balance check
   const balance = await publicClient.getBalance({ address: account.address });
@@ -286,6 +290,166 @@ async function main(): Promise<void> {
   await publicClient.waitForTransactionReceipt({ hash: agreementTxHash });
   console.log("   ⛓️  Confirmed");
 
+
+  // ── STEP 6: Register Provider ERC-8004 Identity ─────────────────
+  console.log("\n━━━ STEP 6: Register Provider ERC-8004 Identity ━━━");
+  let providerAgentId = BigInt(0);
+  let providerIdentityTx: `0x${string}` = "0x0000000000000000000000000000000000000000000000000000000000000000";
+  try {
+    const reg = await registerAgentIdentity({
+      walletClient,
+      publicClient,
+      agentURI: "provider.agenttrust.base.eth",
+      metadata: "0x00" as `0x${string}`,
+    });
+    providerAgentId = reg.agentId;
+    providerIdentityTx = reg.txHash;
+    console.log("   ✅ Provider identity registered!");
+    console.log("   🔗", BASESCAN_TX(providerIdentityTx));
+    console.log("   🆔 Agent ID:", providerAgentId.toString());
+    await publicClient.waitForTransactionReceipt({ hash: providerIdentityTx });
+    console.log("   ⛓️  Confirmed");
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("AlreadyRegistered")) {
+      console.log("   ⏭️  Provider identity already registered");
+      const existingId = await publicClient.readContract({
+        address: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+        abi: [{
+          name: "tokenOfOwnerByIndex",
+          type: "function",
+          stateMutability: "view",
+          inputs: [
+            { name: "owner", type: "address" },
+            { name: "index", type: "uint256" },
+          ],
+          outputs: [{ name: "", type: "uint256" }],
+        }],
+        functionName: "tokenOfOwnerByIndex",
+        args: [account.address, BigInt(0)],
+      });
+      providerAgentId = existingId as bigint;
+      console.log("   🆔 Existing Agent ID:", providerAgentId.toString());
+    } else {
+      throw err;
+    }
+  }
+
+  // ── STEP 7: Register Requester ERC-8004 Identity ────────────────
+  console.log("\n━━━ STEP 7: Register Requester ERC-8004 Identity ━━━");
+  let requesterAgentId = BigInt(0);
+  let requesterIdentityTx: `0x${string}` = "0x0000000000000000000000000000000000000000000000000000000000000000";
+  try {
+    const reg = await registerAgentIdentity({
+      walletClient,
+      publicClient,
+      agentURI: "requester.agenttrust.base.eth",
+      metadata: "0x00" as `0x${string}`,
+    });
+    requesterAgentId = reg.agentId;
+    requesterIdentityTx = reg.txHash;
+    console.log("   ✅ Requester identity registered!");
+    console.log("   🔗", BASESCAN_TX(requesterIdentityTx));
+    console.log("   🆔 Agent ID:", requesterAgentId.toString());
+    await publicClient.waitForTransactionReceipt({ hash: requesterIdentityTx });
+    console.log("   ⛓️  Confirmed");
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("AlreadyRegistered")) {
+      console.log("   ⏭️  Requester identity already registered");
+      const balance = await publicClient.readContract({
+        address: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+        abi: [{
+          name: "balanceOf",
+          type: "function",
+          stateMutability: "view",
+          inputs: [{ name: "owner", type: "address" }],
+          outputs: [{ name: "", type: "uint256" }],
+        }],
+        functionName: "balanceOf",
+        args: [account.address],
+      });
+      const idx = (balance as bigint) > BigInt(1) ? BigInt(1) : BigInt(0);
+      const existingId = await publicClient.readContract({
+        address: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+        abi: [{
+          name: "tokenOfOwnerByIndex",
+          type: "function",
+          stateMutability: "view",
+          inputs: [
+            { name: "owner", type: "address" },
+            { name: "index", type: "uint256" },
+          ],
+          outputs: [{ name: "", type: "uint256" }],
+        }],
+        functionName: "tokenOfOwnerByIndex",
+        args: [account.address, idx],
+      });
+      requesterAgentId = existingId as bigint;
+      console.log("   🆔 Existing Agent ID:", requesterAgentId.toString());
+    } else {
+      throw err;
+    }
+  }
+
+  // ── STEP 8: Submit Feedback for Provider ────────────────────────
+  console.log("\n━━━ STEP 8: Submit Provider Feedback ━━━");
+  let providerFeedbackTx: `0x${string}` = "0x0000000000000000000000000000000000000000000000000000000000000000";
+  try {
+    const fb = await submitFeedback({
+      walletClient,
+      publicClient,
+      agentId: providerAgentId,
+      value: 85,
+      decimals: 0,
+      tag1: "quality",
+      tag2: "initial",
+      endpoint: "provider.agenttrust.base.eth",
+      ipfsHash: "",
+    });
+    providerFeedbackTx = fb.txHash;
+    console.log("   ✅ Provider feedback submitted!");
+    console.log("   🔗", BASESCAN_TX(providerFeedbackTx));
+    await publicClient.waitForTransactionReceipt({ hash: providerFeedbackTx });
+    console.log("   ⛓️  Confirmed");
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("AlreadyRated") || msg.includes("already")) {
+      console.log("   ⏭️  Provider feedback already submitted");
+    } else {
+      throw err;
+    }
+  }
+
+  // ── STEP 9: Submit Feedback for Requester ───────────────────────
+  console.log("\n━━━ STEP 9: Submit Requester Feedback ━━━");
+  let requesterFeedbackTx: `0x${string}` = "0x0000000000000000000000000000000000000000000000000000000000000000";
+  try {
+    const fb = await submitFeedback({
+      walletClient,
+      publicClient,
+      agentId: requesterAgentId,
+      value: 75,
+      decimals: 0,
+      tag1: "quality",
+      tag2: "initial",
+      endpoint: "requester.agenttrust.base.eth",
+      ipfsHash: "",
+    });
+    requesterFeedbackTx = fb.txHash;
+    console.log("   ✅ Requester feedback submitted!");
+    console.log("   🔗", BASESCAN_TX(requesterFeedbackTx));
+    await publicClient.waitForTransactionReceipt({ hash: requesterFeedbackTx });
+    console.log("   ⛓️  Confirmed");
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("AlreadyRated") || msg.includes("already")) {
+      console.log("   ⏭️  Requester feedback already submitted");
+    } else {
+      throw err;
+    }
+  }
+
   // ── FINAL: Post-seed verification ───────────────────────────────
   console.log("\n━━━ Post-Seed Verification ━━━");
   const finalRegistered = await publicClient.readContract({
@@ -321,6 +485,12 @@ async function main(): Promise<void> {
   console.log("   Wrap WETH tx:  ", BASESCAN_TX(wrapTxHash));
   console.log("   Approve tx:    ", BASESCAN_TX(approveTxHash));
   console.log("   Agreement tx:  ", BASESCAN_TX(agreementTxHash));
+  if (providerAgentId !== BigInt(0)) console.log("   Provider ERC-8004 ID: ", providerAgentId.toString());
+  if (requesterAgentId !== BigInt(0)) console.log("   Requester ERC-8004 ID:", requesterAgentId.toString());
+  if (providerIdentityTx !== "0x0000000000000000000000000000000000000000000000000000000000000000") console.log("   Provider Identity tx: ", BASESCAN_TX(providerIdentityTx));
+  if (requesterIdentityTx !== "0x0000000000000000000000000000000000000000000000000000000000000000") console.log("   Requester Identity tx:", BASESCAN_TX(requesterIdentityTx));
+  if (providerFeedbackTx !== "0x0000000000000000000000000000000000000000000000000000000000000000") console.log("   Provider Feedback tx: ", BASESCAN_TX(providerFeedbackTx));
+  if (requesterFeedbackTx !== "0x0000000000000000000000000000000000000000000000000000000000000000") console.log("   Requester Feedback tx:", BASESCAN_TX(requesterFeedbackTx));
   console.log("\n🎉 Seed complete! Frontend should now show live data.\n");
 }
 

@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
+import { createPublicClient, http } from "viem";
+import { base } from "viem/chains";
 import { useScaffoldReadContract } from "@/components/scaffold-eth/hooks/useScaffoldReadContract";
 import { TrustScoreBadge, TrustBar } from "@/components/shared/TrustScoreBadge";
 import { SkeletonCard } from "@/components/shared/SkeletonCard";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
+import { getAgentIdByOwner, getAgentReputation } from "../../sdk/erc8004.js";
+import { computeERC8004Limits } from "../../sdk/uniswap.js";
 
 interface TrustDataDisplay {
   score: number;
@@ -15,6 +19,11 @@ interface TrustDataDisplay {
   mintedAt: number;
   tokenId: number;
 }
+
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http(process.env.NEXT_PUBLIC_BASE_RPC || "https://mainnet.base.org"),
+});
 
 export default function TrustPage() {
   const { isConnected, address } = useAccount();
@@ -54,6 +63,11 @@ export default function TrustPage() {
         {/* Your Trust Score */}
         {isConnected && address && (
           <YourTrustScore address={address as `0x${string}`} />
+        )}
+
+        {/* Your ERC-8004 Reputation */}
+        {isConnected && address && (
+          <YourERC8004Score address={address as `0x${string}`} />
         )}
 
         {/* All Trust NFTs */}
@@ -190,6 +204,166 @@ function YourTrustScore({ address }: { address: `0x${string}` }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function YourERC8004Score({ address }: { address: `0x${string}` }) {
+  const [state, setState] = useState<{
+    loading: boolean;
+    agentId: bigint | null;
+    qualityScore: number;
+    uptimeScore: number;
+    tier: "blocked" | "bronze" | "silver" | "gold";
+    maxUSDC: string;
+    slippageBps: number;
+  }>({
+    loading: true,
+    agentId: null,
+    qualityScore: 0,
+    uptimeScore: 0,
+    tier: "blocked",
+    maxUSDC: "0",
+    slippageBps: 0,
+  });
+
+  useEffect(() => {
+    if (!address) return;
+    let cancelled = false;
+
+    async function fetchData() {
+      try {
+        const agentId = await getAgentIdByOwner(publicClient, address);
+        if (cancelled) return;
+        if (!agentId) {
+          setState({
+            loading: false,
+            agentId: null,
+            qualityScore: 0,
+            uptimeScore: 0,
+            tier: "blocked",
+            maxUSDC: "0",
+            slippageBps: 0,
+          });
+          return;
+        }
+
+        let qualityScore = 0;
+        let uptimeScore = 0;
+
+        try {
+          const quality = await getAgentReputation(publicClient, { agentId, tag1: "quality" });
+          qualityScore = quality.normalizedScore;
+        } catch {
+          /* no quality feedback */
+        }
+
+        try {
+          const uptime = await getAgentReputation(publicClient, { agentId, tag1: "uptime" });
+          uptimeScore = uptime.normalizedScore;
+        } catch {
+          /* no uptime feedback */
+        }
+
+        if (cancelled) return;
+
+        const primaryScore = Math.max(qualityScore, uptimeScore);
+        const limits = computeERC8004Limits(primaryScore);
+        const tier = limits.level;
+        const maxUSDC = (Number(limits.maxAmount) / 1e6).toLocaleString();
+
+        setState({
+          loading: false,
+          agentId,
+          qualityScore,
+          uptimeScore,
+          tier,
+          maxUSDC,
+          slippageBps: limits.slippageBps,
+        });
+      } catch {
+        if (!cancelled) {
+          setState({
+            loading: false,
+            agentId: null,
+            qualityScore: 0,
+            uptimeScore: 0,
+            tier: "blocked",
+            maxUSDC: "0",
+            slippageBps: 0,
+          });
+        }
+      }
+    }
+
+    fetchData();
+    return () => { cancelled = true; };
+  }, [address]);
+
+  if (state.loading) return <div className="mt-8"><SkeletonCard /></div>;
+
+  const tierClass =
+    state.tier === "gold"
+      ? "bg-gradient-to-r from-[#533afd] to-[#f96bee] text-white"
+      : state.tier === "silver"
+        ? "bg-[#533afd] text-white"
+        : state.tier === "bronze"
+          ? "bg-[#b9b9f9] text-[#061b31]"
+          : "bg-[#64748d] text-white";
+
+  return (
+    <div className="mt-8 rounded-lg border border-[#e5edf5] bg-white p-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-light text-navy">Your ERC-8004 Reputation</h2>
+        <span className="rounded-sm bg-[rgba(83,58,253,0.08)] px-2 py-0.5 font-mono text-[11px] text-purple">ERC-8004</span>
+      </div>
+      {state.agentId === null ? (
+        <p className="mt-4 text-sm text-[#64748d]">Not registered</p>
+      ) : (
+        <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {/* Score Gauge */}
+          <div className="flex flex-col items-center justify-center">
+            <div className="relative flex h-28 w-28 items-center justify-center">
+              <svg className="h-28 w-28 -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#e5edf5" strokeWidth="8" />
+                <circle
+                  cx="50" cy="50" r="40" fill="none"
+                  stroke={state.qualityScore >= 85 ? "url(#trustGrad)" : state.qualityScore >= 70 ? "#533afd" : "#b9b9f9"}
+                  strokeWidth="8"
+                  strokeDasharray={`${(state.qualityScore / 100) * 251.2} 251.2`}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span className="absolute font-mono text-2xl font-medium text-navy">{state.qualityScore}</span>
+            </div>
+            <span className={`mt-2 rounded-sm px-3 py-1 font-mono text-xs font-medium uppercase tracking-wider ${tierClass}`}>
+              {state.tier}
+            </span>
+          </div>
+          {/* Multi-dimensional Breakdown */}
+          <div className="space-y-4">
+            <div>
+              <p className="font-mono text-[12px] uppercase tracking-wider text-[#64748d]">Quality Score</p>
+              <p className="mt-1 font-mono text-2xl text-navy">{state.qualityScore}/100</p>
+            </div>
+            <div>
+              <p className="font-mono text-[12px] uppercase tracking-wider text-[#64748d]">Uptime Score</p>
+              <p className="mt-1 font-mono text-2xl text-navy">{state.uptimeScore}/100</p>
+            </div>
+          </div>
+          {/* Swap Limits */}
+          <div className="space-y-4">
+            <div>
+              <p className="font-mono text-[12px] uppercase tracking-wider text-[#64748d]">Max Swap Amount</p>
+              <p className="mt-1 font-mono text-2xl text-navy">{state.maxUSDC} USDC</p>
+            </div>
+            <div>
+              <p className="font-mono text-[12px] uppercase tracking-wider text-[#64748d]">Slippage</p>
+              <p className="mt-1 font-mono text-2xl text-navy">{state.slippageBps / 100}%</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

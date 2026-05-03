@@ -25,6 +25,7 @@
     "sdk/**/*.ts",
     "axl/**/*.ts",
     "demo/**/*.ts",
+    "scripts/**/*.ts",
     "wallet/**/*.ts"
   ],
   "exclude": [

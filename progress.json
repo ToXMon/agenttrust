@@ -264,7 +264,7 @@
   "deployment": {
     "network": "base-sepolia",
     "chain_id": 84532,
-    "deployer": "0xce9B692A01D47054e9ebC15722c071cbc4BE714e",
+    "deployer": "0xREDACTED_LEGACY_ADDR",
     "contracts": {
       "AgentRegistry": {
         "address": "0x6CE3d4bf7C7140924C6AB7579b8B86Dc9ebF7a02",
