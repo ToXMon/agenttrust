@@ -13,11 +13,11 @@ services:
       - NEXT_PUBLIC_AGENT_REGISTRY=0xb7Bb2dbaEA5FBBb400D605d3A8a65871A72eCF27
       - NEXT_PUBLIC_SERVICE_AGREEMENT=0x9c21A5E1Cf7E6200c38F262449E0A78626257F41
       - NEXT_PUBLIC_TRUST_NFT=0xF556e73320EE6F0E4862C867C75dA0b2bB0116A1
-      - NEXT_PUBLIC_ENS_BASENAME=agentrust.base.eth
+      - NEXT_PUBLIC_ENS_BASENAME=agent-trust.base.eth
       - NEXT_PUBLIC_BLOCK_EXPLORER=https://basescan.org
       - NODE_ENV=production
-      - AXL_NODE_A_URL=https://9nm3dahv8db5b9m3q8spvc7o7o.ingress.akash-palmito.org
-      - AXL_NODE_B_URL=https://n8jr4en77l8l972bk9i1d40sj4.ingress.akash-palmito.org
+      - AXL_NODE_A_URL=https://axl-a.wijnaldum.us
+      - AXL_NODE_B_URL=https://axl-b.wijnaldum.us
       - PORT=3000
     expose:
       - port: 3000
