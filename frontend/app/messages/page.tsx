@@ -138,7 +138,7 @@ export default function MessagesPage() {
   const anyOnline = nodesOnline.some((n) => n.online);
 
   return (
-    <>
+    <div>
       <div className="mx-auto max-w-7xl px-6 pb-20 pt-12">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -289,6 +289,6 @@ export default function MessagesPage() {
           </span>
         </div>
       </footer>
-    </>
+    </div>
   );
 }
