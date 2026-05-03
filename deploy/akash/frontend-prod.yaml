@@ -1,12 +1,12 @@
 # ── AgentTrust Frontend ── Production SDL for Console API ──────
 # Next.js 14 standalone on Base Mainnet
-# Image: ghcr.io/toxmon/agentrust-frontend:v0.3.0 (PUBLIC)
+# Image: ghcr.io/toxmon/agentrust-frontend:v0.4.0 (PUBLIC)
 
 version: "2.0"
 
 services:
   frontend:
-    image: ghcr.io/toxmon/agentrust-frontend:v0.3.0
+    image: ghcr.io/toxmon/agentrust-frontend:v0.4.0
     env:
       - NEXT_PUBLIC_CHAIN_ID=8453
       - NEXT_PUBLIC_RPC_URL=https://mainnet.base.org
